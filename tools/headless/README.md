@@ -17,6 +17,9 @@ python tools/headless/sheet.py .headless/out/phone   # contact sheet of a run's 
 python tools/headless/run.py --scenario all --mods smods-26,talisman   # with mods (see below)
 python tools/headless/run.py --scenario mods --mods smods-26 --source vanilla  # unmodded game as a baseline
 python tools/headless/run.py --scenario all --source zygisk   # the game as the Zygisk module makes it
+python tools/headless/suite.py --quick               # 24 runs, about a minute, while working
+python tools/headless/suite.py                       # all 443 runs, before a release
+python tools/headless/suite.py --only smods-1        # one group of the matrix
 ```
 
 `--source zygisk` extracts the Play copy from `.headless/play.apk` (or
@@ -29,14 +32,29 @@ rooted phone.
 Every `screen_check` also measures the open menu's panel against the screen
 edges and records an issue when it sits closer than 0.2 tiles to either one.
 
-The whole suite on every device (`--scenario all --device all`, 40 runs)
-takes three to four minutes: runs play at game speed 4 (the fastest the game's
-own setting offers; `--gamespeed 1` plays at a player's pace), waits follow
-the game clock or wait for the screen to settle, the intro is skipped (the
-`boot` scenario keeps it), and every scenario/device pair is one job in a
-pool of eight. Each pair has its own profile (per `--out` too, so two
-runners side by side never share one either), so parallel runs never share a
-save.
+## Speed
+
+Time follows frames, not the wall clock: each frame is 1/30 s, nothing sleeps,
+and the game runs as fast as the machine draws it. Every run gets the same steps,
+and taps, swipes and timeouts keep their pace. `--realtime` follows the wall clock
+instead, which takes two to four times as long per run. Runs also play at game
+speed 4 (the fastest the game's own setting offers; `--gamespeed 1` plays at a
+player's pace), waits follow the game clock or wait for the screen to settle, and
+the intro is skipped (the `boot` scenario keeps it).
+
+`suite.py` runs every source, mod set, language, scenario and device as one job in
+a single pool, longest first. All 443 runs took 23 minutes on a Ryzen 7 7800X3D
+with an RTX 3090 and 32 GB of RAM, against 69 for the same matrix one group after
+another in real time. A run that passes leaves nothing behind; one that fails keeps
+its folder under `.headless/out/suite/`. Each job has its own profile, so parallel
+runs never share a save.
+
+Keep `--jobs` at 8 or lower. Each game commits far more memory than its own
+process shows, because the graphics driver's share counts too: 8 games reached 68%
+of the commit limit on that machine (32 GB of RAM, 16 GB page file), and 14 were no
+faster and ran out of memory.
+
+If the runner is killed, Windows ends every game it started.
 
 Built-in scenarios: `boot`, `smoke` (title to a played hand and a discard),
 `menus` (every menu from the title), `run` (a bot plays a seeded run through

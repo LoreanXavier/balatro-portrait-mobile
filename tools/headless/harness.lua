@@ -18,6 +18,16 @@ local LANG = os.getenv('BPM_HL_LANG')
 if LANG == '' then LANG = nil end
 local lang_applied, pending_menu_rebuild = false, false
 
+-- Time follows frames, not the wall clock: each frame is 1/30 s, nothing
+-- sleeps, and the game runs as fast as the machine draws it. A run stops
+-- waiting on a clock and gets the same steps every time. --realtime turns it off.
+local FRAME_STEP = os.getenv('BPM_HL_REALTIME') ~= '1' and 1 / 30 or nil
+local stepped_time = love.timer.getTime()
+if FRAME_STEP then
+    love.timer.getTime = function() return stepped_time end
+    love.timer.sleep = function() end
+end
+
 local report = {
     ok = true,
     device = DEVICE,
@@ -33,11 +43,11 @@ local finished = false
 
 local function now() return love.timer.getTime() - started_at end
 
--- Game clock: real seconds times the speed the game itself runs at
+-- Game clock: seconds times the speed the game itself runs at
 -- (G.SPEEDFACTOR, which BPM_HL_GAMESPEED raises during a run; menus and
 -- paused screens stay at 1). Scenario waits count this clock, so "wait for
 -- the cards to land" lasts as long as the landing does at any game speed,
--- while taps, swipes and timeouts stay in real time.
+-- while taps, swipes and timeouts keep their own pace.
 local game_clock = 0
 local function game_now() return game_clock end
 
@@ -263,7 +273,7 @@ function api.wait(seconds)
     repeat coroutine.yield() until game_now() >= t
 end
 
--- Real seconds, for what a finger does (touch hold, swipe timing).
+-- Seconds at no game speed, for what a finger does (touch hold, swipe timing).
 function api.wait_real(seconds)
     local t = now() + (seconds or 0)
     repeat coroutine.yield() until now() >= t
@@ -923,6 +933,8 @@ function api.select_blind()
         local waited = 0
         while G.STATE ~= G.STATES.SELECTING_HAND and waited < 6 do api.wait(0.25) waited = waited + 0.25 end
         if G.STATE == G.STATES.SELECTING_HAND then return end
+        -- The button is gone, so the tap took and the round is still starting.
+        if not api.find({button = 'select_blind'}) then break end
         api.warn('Select did not take, tapping again')
     end
     api.wait_state('SELECTING_HAND', 10)
@@ -984,7 +996,8 @@ love.update = function(dt)
     -- While recording, the game steps a fixed 1/fps per frame however long the
     -- capture takes, so the clip keeps the game's pace (it caps movement at
     -- 1/20 s a frame, and a slow capture would play back in slow motion).
-    dt = api.recording_step() or dt
+    dt = api.recording_step() or FRAME_STEP or dt
+    stepped_time = stepped_time + dt
     game_update(dt)
     if finished then return end
     game_clock = game_clock + dt * ((G.SETTINGS and G.SETTINGS.paused) and 1 or (G.SPEEDFACTOR or 1))

@@ -96,6 +96,38 @@ def prepare_engine(balatro_exe):
     return love_exe
 
 
+def die_with_children():
+    """Windows closes this job when the runner ends in any way, and closing it
+    ends every game the runner started: none is left holding the engine's files."""
+    import ctypes
+    from ctypes import wintypes
+
+    class Basic(ctypes.Structure):
+        _fields_ = [("user_time", ctypes.c_longlong), ("job_time", ctypes.c_longlong),
+                    ("flags", wintypes.DWORD), ("min_ws", ctypes.c_size_t), ("max_ws", ctypes.c_size_t),
+                    ("processes", wintypes.DWORD), ("affinity", ctypes.c_size_t),
+                    ("priority", wintypes.DWORD), ("scheduling", wintypes.DWORD)]
+
+    class Extended(ctypes.Structure):
+        _fields_ = [("basic", Basic), ("io", ctypes.c_ulonglong * 6), ("process_memory", ctypes.c_size_t),
+                    ("job_memory", ctypes.c_size_t), ("peak_process", ctypes.c_size_t),
+                    ("peak_job", ctypes.c_size_t)]
+
+    KILL_ON_JOB_CLOSE, EXTENDED_LIMITS = 0x2000, 9
+    k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    k32.CreateJobObjectW.restype = wintypes.HANDLE
+    k32.CreateJobObjectW.argtypes = [ctypes.c_void_p, wintypes.LPCWSTR]
+    k32.SetInformationJobObject.argtypes = [wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD]
+    k32.GetCurrentProcess.restype = wintypes.HANDLE
+    k32.AssignProcessToJobObject.argtypes = [wintypes.HANDLE, wintypes.HANDLE]
+    job = k32.CreateJobObjectW(None, None)
+    limits = Extended()
+    limits.basic.flags = KILL_ON_JOB_CLOSE
+    if not (job and k32.SetInformationJobObject(job, EXTENDED_LIMITS, ctypes.byref(limits), ctypes.sizeof(limits))
+            and k32.AssignProcessToJobObject(job, k32.GetCurrentProcess())):
+        print("  warning: games may outlive this runner if it is killed")
+
+
 def _sync_tree(src, dst):
     """Copy src over dst, skipping files whose size and mtime already match."""
     copied = 0
@@ -368,10 +400,11 @@ def prepare_lovely_engine(love_exe):
     engine so runs without mods stay vanilla."""
     src = _mod_source("lovely-win")
     dll = next(f for f in os.listdir(src) if f.lower().endswith(".dll"))
-    os.makedirs(LOVELY_ENGINE_DIR, exist_ok=True)
-    for f in os.listdir(ENGINE_DIR):
-        shutil.copy2(os.path.join(ENGINE_DIR, f), os.path.join(LOVELY_ENGINE_DIR, f))
-    shutil.copy2(os.path.join(src, dll), os.path.join(LOVELY_ENGINE_DIR, dll))
+    # Only what changed: a game from another runner may have these files open.
+    _sync_tree(ENGINE_DIR, LOVELY_ENGINE_DIR)
+    dst = os.path.join(LOVELY_ENGINE_DIR, dll)
+    if not os.path.isfile(dst) or os.path.getsize(dst) != os.path.getsize(os.path.join(src, dll)):
+        shutil.copy2(os.path.join(src, dll), dst)
     return os.path.join(LOVELY_ENGINE_DIR, "love.exe")
 
 
@@ -421,6 +454,8 @@ def run_one(love_exe, game_dir, scenario, device, spec, args):
     })
     if args.gamespeed and args.gamespeed != 1:
         env["BPM_HL_GAMESPEED"] = str(args.gamespeed)
+    if args.realtime:
+        env["BPM_HL_REALTIME"] = "1"
     # The boot scenario is the one that tests the intro; every other run
     # starts at the title.
     if args.splash or os.path.basename(args.scenario).split(".")[0] == "boot":
@@ -501,7 +536,8 @@ def run_one(love_exe, game_dir, scenario, device, spec, args):
     if milestones:
         lines.append("    reached: " + " > ".join(milestones))
     lines.append(f"  -> {os.path.relpath(out, ROOT)}")
-    print("\n".join(lines), flush=True)
+    if not (ok and getattr(args, "brief", False)):
+        print("\n".join(lines), flush=True)
     return {"device": device, "size": size, "os": device_os or "Windows", "ok": bool(ok), "exit": code,
             "out": os.path.relpath(out, ROOT), "report": report}
 
@@ -528,7 +564,9 @@ def main():
     ap.add_argument("--gamespeed", type=float, default=4,
                     help="game speed during runs (default 4, the game's own fastest setting; 8 drops "
                          "taps; 1 = as a player sees it). Waits in scenarios follow the game clock, "
-                         "taps and swipes stay real time")
+                         "taps and swipes keep their own pace")
+    ap.add_argument("--realtime", action="store_true",
+                    help="follow the wall clock instead of stepping time frame by frame (slower)")
     ap.add_argument("--splash", action="store_true", help="play the intro instead of skipping it")
     ap.add_argument("--visible", action="store_true", help="put the window on screen to watch it")
     ap.add_argument("--sound", action="store_true", help="keep audio on")
@@ -552,6 +590,7 @@ def main():
     exe = find_balatro(args.balatro)
     if not exe:
         sys.exit("ERROR: Balatro.exe not found. Pass --balatro PATH or set BALATRO_EXE.")
+    die_with_children()
 
     if args.device == "all":
         devices = list(DEVICES.items())

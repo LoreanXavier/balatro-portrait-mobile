@@ -386,6 +386,7 @@ python tools/headless/run.py --scenario all --device all
 python tools/headless/run.py --scenario layouts,stress,menus --device narrow --lang de
 python tools/headless/run.py --scenario all,mods --mods smods-26,talisman
 python tools/headless/run.py --source zygisk --scenario all   # as the Zygisk module runs it
+python tools/headless/suite.py          # the whole matrix in one pool, before a release
 ```
 
 See [tools/headless/README.md](tools/headless/README.md).
