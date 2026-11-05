@@ -1,0 +1,32 @@
+--- a/card_character.lua
++++ b/card_character.lua
+@@ -64,6 +64,14 @@
+ 
+ function Card_Character:add_button(button, func, colour, update_func, snap_to, yoff)
+     if self.children.button then self.children.button:remove() end
++    -- Portrait puts the speech bubble under the character too (see
++    -- add_speech_bubble), so a button at the usual 0.3 landed on the bubble's
++    -- text (Cryptid's intro). It goes under the bubble instead.
++    local sb = self.children.speech_bubble
++    if G.F_PORTRAIT and sb and sb.T and sb.T.h > 0 then
++        local sb_bottom = (self.config.speech_bubble_align and self.config.speech_bubble_align.offset.y or 0.3) + sb.T.h
++        yoff = math.max(yoff or 0.3, sb_bottom + 0.15)
++    end
+     self.config.button_align = {align="bm", offset = {x=0,y=yoff or 0.3},major = self, parent = self}
+     self.children.button = UIBox{
+         definition = create_UIBox_character_button({button = button, func = func, colour = colour, update_func = update_func, maxw = 3}),
+@@ -74,7 +82,13 @@
+ 
+ function Card_Character:add_speech_bubble(text_key, align, loc_vars)
+     if self.children.speech_bubble then self.children.speech_bubble:remove() end
+-    self.config.speech_bubble_align = {align=align or 'bm', offset = {x=0,y=0},parent = self}
++    local sb_align = align or 'bm'
++    local sb_offset_y = 0
++    if G.F_PORTRAIT then
++        sb_align = 'bm'
++        sb_offset_y = 0.3
++    end
++    self.config.speech_bubble_align = {align=sb_align, offset = {x=0,y=sb_offset_y},parent = self}
+     self.children.speech_bubble = 
+     UIBox{
+         definition = G.UIDEF.speech_bubble(text_key, loc_vars),
