@@ -61,7 +61,7 @@
  require "functions/misc_functions"
  require "functions/test_functions"
  require "card"
-@@ -32,203 +75,292 @@
+@@ -32,203 +75,362 @@
  
  math.randomseed( G.SEED )
  
@@ -163,6 +163,8 @@
 +		local is_mobile = (os_name == 'Android' or os_name == 'iOS')
 +		if not G.FPS_CAP then
 +			local cap = is_mobile and (PORTRAIT_CONFIG and PORTRAIT_CONFIG.fps_cap or 60) or 500
++			local chosen = is_mobile and PORTRAIT_FPS_CAPS[G.SETTINGS.portrait_fps or 1]
++			if chosen then cap = chosen end
 +			if cap == 'auto' then
 +				local ok, _, _, flags = pcall(love.window.getMode)
 +				cap = (ok and flags and flags.refreshrate and flags.refreshrate > 0) and flags.refreshrate or 60
@@ -278,9 +280,58 @@
 +	-- rebuild with another Steamodded version never reached the phone and the
 +	-- first one installed stayed forever (#47). What was installed is recorded
 +	-- beside it, and the copy is redone when that no longer matches.
-+	pcall(function()
-+		if not love.filesystem.getInfo("install_mods") then return end
++	--
++	-- On Android Lovely reads save/ASET/Mods, beside the save folder and out of
++	-- love.filesystem's reach, so everything lands in Mods/ in the save folder
++	-- and is renamed across. Builds before 1.0.1 kept mods in that Mods/, so
++	-- this also carries them over. Mods moved here load on the next launch.
++	function PORTRAIT_SYNC_MODS()
 +		local STAMP = "/.portrait_bundle"
++		local save = love.filesystem.getSaveDirectory():gsub("\\", "/")
++
++		-- Where Lovely reads mods, when that is not Mods/ in the save folder.
++		local function lovely_dir()
++			local dir
++			local ok, lovely = pcall(require, "lovely")
++			if ok and type(lovely) == "table" and type(lovely.mod_dir) == "string" then
++				dir = lovely.mod_dir:gsub("\\", "/"):gsub("/+$", "")
++			elseif love.system.getOS() == "Android" then
++				dir = save:gsub("/[^/]+$", "") .. "/ASET/Mods"
++			end
++			if dir and dir:lower() ~= (save .. "/Mods"):lower() then return dir end
++		end
++		local target = lovely_dir()
++
++		-- What is already there stays: a folder present on both sides is merged
++		-- and a file present on both sides keeps the copy Lovely reads.
++		local function move_into(rel, to_dir)
++			for _, item in ipairs(love.filesystem.getDirectoryItems(rel)) do
++				local from, to = rel .. "/" .. item, to_dir .. "/" .. item
++				if love.filesystem.getInfo(from, "directory") then
++					if not os.rename(save .. "/" .. from, to) then
++						move_into(from, to)
++						love.filesystem.remove(from)
++					end
++				else
++					local there = io.open(to, "rb")
++					if there then
++						there:close()
++					else
++						os.rename(save .. "/" .. from, to)
++					end
++				end
++			end
++		end
++
++		local function carry_over()
++			if target and love.filesystem.getInfo("Mods", "directory") then
++				move_into("Mods", target)
++				love.filesystem.remove("Mods")
++			end
++		end
++
++		carry_over()
++		if not love.filesystem.getInfo("install_mods") then return end
 +
 +		local function copy_dir(src, dst)
 +			love.filesystem.createDirectory(dst)
@@ -332,16 +383,35 @@
 +			if love.filesystem.getInfo(src, "directory") then
 +				local dst = "Mods/" .. mod
 +				local stamp = stamp_of(src)
-+				local installed = love.filesystem.getInfo(dst, "directory")
-+					and love.filesystem.read(dst .. STAMP) or nil
++				local installed
++				if target then
++					local f = io.open(target .. "/" .. mod .. STAMP, "rb")
++					if f then
++						installed = f:read("*a")
++						f:close()
++					end
++				else
++					installed = love.filesystem.getInfo(dst, "directory")
++						and love.filesystem.read(dst .. STAMP) or nil
++				end
 +				if installed ~= stamp then
++					love.filesystem.createDirectory("Mods")
++					if target then
++						-- Out of the way first, into reach of remove_dir.
++						os.rename(target .. "/" .. mod, save .. "/Mods/.old_" .. mod)
++						if love.filesystem.getInfo("Mods/.old_" .. mod, "directory") then
++							remove_dir("Mods/.old_" .. mod)
++						end
++					end
 +					if love.filesystem.getInfo(dst, "directory") then remove_dir(dst) end
 +					copy_dir(src, dst)
 +					love.filesystem.write(dst .. STAMP, stamp)
 +				end
 +			end
 +		end
-+	end)
++		carry_over()
++	end
++	pcall(PORTRAIT_SYNC_MODS)
 +
 +	G:start_up()
 +	local desktop_os = love.system.getOS()
@@ -488,7 +558,7 @@
  	if not _RELEASE_MODE and G.keybind_mapping[key] then love.gamepadpressed(G.CONTROLLER.keyboard_controller, G.keybind_mapping[key])
  	else
  		G.CONTROLLER:set_HID_flags('mouse')
-@@ -237,14 +369,6 @@
+@@ -237,14 +439,6 @@
  end
  
  function love.keyreleased(key)
@@ -503,7 +573,7 @@
  	if not _RELEASE_MODE and G.keybind_mapping[key] then love.gamepadreleased(G.CONTROLLER.keyboard_controller, G.keybind_mapping[key])
  	else
  		G.CONTROLLER:set_HID_flags('mouse')
-@@ -252,6 +376,22 @@
+@@ -252,6 +446,22 @@
  	end
  end
  
@@ -526,7 +596,7 @@
  function love.gamepadpressed(joystick, button)
  	button = G.button_mapping[button] or button
  	G.CONTROLLER:set_gamepad(joystick)
-@@ -266,9 +406,43 @@
+@@ -266,9 +476,43 @@
      G.CONTROLLER:button_release(button)
  end
  
@@ -571,7 +641,7 @@
  		G.CONTROLLER:queue_L_cursor_press(x, y)
  	end
  	if button == 2 then
-@@ -277,47 +451,149 @@
+@@ -277,47 +521,149 @@
  end
  
  
@@ -735,7 +805,7 @@
  				local request = CHANNEL:demand()
  				if request then
  					https.request(request)
-@@ -333,7 +609,6 @@
+@@ -333,7 +679,6 @@
  			str = str:gsub("\n", "\r\n"):gsub("([^%w _%%%-%.~])", char_to_hex):gsub(" ", "+")
  			return str
  		end
@@ -743,7 +813,7 @@
  
  		local error = msg
  		local file = string.sub(msg, 0,  string.find(msg, ':'))
-@@ -351,7 +626,7 @@
+@@ -351,7 +696,7 @@
  				function_line = string.sub(l, string.find(l, 'in function')+12)..' line:'..function_line
  			end
  
@@ -752,7 +822,7 @@
  				trace = trace..l..'\n'
  			end
  		end
-@@ -370,39 +645,61 @@
+@@ -370,39 +715,61 @@
  		end
  	end
  
@@ -826,7 +896,7 @@
  	end
  
  	while true do
-@@ -411,16 +708,15 @@
+@@ -411,16 +778,15 @@
  		for e, a, b, c in love.event.poll() do
  			if e == "quit" then
  				return
@@ -850,7 +920,7 @@
  			end
  		end
  
-@@ -434,51 +730,162 @@
+@@ -434,51 +800,162 @@
  end
  
  function love.resize(w, h)

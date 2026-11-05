@@ -24,7 +24,7 @@ Android and iPhone · three layouts · Steamodded mods · every language the gam
   </tr>
 </table>
 
-**[Install](#install) · [What's new in 1.0.0](#whats-new-in-100) · [Mods](#mods) · [Save transfer](#save-transfer) · [Help](#troubleshooting) · [Support](#support-the-mod)**
+**[Install](#install) · [What's new in 1.0.1](#whats-new-in-101) · [Mods](#mods) · [Save transfer](#save-transfer) · [Help](#troubleshooting) · [Support](#support-the-mod)**
 
 </div>
 
@@ -182,6 +182,21 @@ looks off, send the **Options → Diagnostics** report and a screenshot in an
 
 ---
 
+## What's new in 1.0.1
+
+- **The black ellipse is fixed**, on every install route, with the CRT shader
+  left on. `--disable-crt` is no longer needed for it.
+- **The APK's mod folder is `ASET/Mods/` again**, so
+  [Balatro Mod Manager for Android](https://github.com/danitsdev/balatro-mod-manager-android)
+  works with it. Your mods move there by themselves: open the game once, then
+  restart it.
+- **Options → Settings → Graphics → Frame Rate**: 30 or 60 instead of your
+  screen's rate, to save battery.
+- One-Thumb's score line keeps its height when the hand's total comes up, so it
+  no longer touches the played cards on a tablet.
+
+Everything else is in the [changelog](CHANGELOG.md).
+
 ## What's new in 1.0.0
 
 > [!IMPORTANT]
@@ -256,7 +271,7 @@ python build.py --steamodded latest    # the newest release (may not be tested y
 
 A bundled mod installs itself on the first launch; restart once and it is on.
 
-**Tested for 1.0.0** in all three layouts, on a 360 dp phone, a 412 dp phone,
+**Tested for 1.0.1** in all three layouts, on a 360 dp phone, a 412 dp phone,
 an iPhone SE and a tablet: start, every menu, a full run, the stress test and
 the Mods menu.
 
@@ -276,9 +291,11 @@ the Mods menu.
 2. Install [Material Files](https://play.google.com/store/apps/details?id=me.zhanghai.android.files).
 3. Menu → **Add storage** → **External storage** → the **Balatro** app →
    **Use this folder**.
-4. Put the mod's folder in `game/Mods/`, then restart the game.
+4. Put the mod's folder in `ASET/Mods/`, then restart the game.
 
-ADB and root file managers work too: [docs/MODDING.md](docs/MODDING.md).
+[Balatro Mod Manager for Android](https://github.com/danitsdev/balatro-mod-manager-android)
+does this for you: pick the Balatro app's folder when it asks. ADB and root file
+managers work too: [docs/MODDING.md](docs/MODDING.md).
 
 </details>
 
@@ -326,6 +343,56 @@ Walkthrough and the manual route: [docs/SAVE_TRANSFER.md](docs/SAVE_TRANSFER.md)
 - **Build flags:** `--crt` / `--no-crt` are gone (they did the opposite of
   their names); use `--disable-crt` or `--keep-crt`.
 
+## FAQ
+
+<details>
+<summary><b>Can I just download a ready-made APK?</b></summary>
+<br>
+No. An APK would contain the game, and the game is not ours to hand out. The
+build makes one from your own copy, on a PC or on the phone.
+</details>
+
+<details>
+<summary><b>Does it work with the Google Play version?</b></summary>
+<br>
+Yes. <a href="#-portrait-apk-built-on-the-phone">Built on the phone</a>, the APK
+is made from the Play Store copy, no PC or root needed. With root, the
+<a href="#-zygisk-module-root">Zygisk module</a> runs inside the official app.
+</details>
+
+<details>
+<summary><b>Do cloud saves work?</b></summary>
+<br>
+<b>APK:</b> no. It is a separate app with no Google Play Games in it, so its save
+stays on the phone. <a href="#save-transfer">Save transfer</a> brings your
+progress across once. <b>Zygisk:</b> it is the official app and the module leaves
+its saving alone, but this has not been tested.
+</details>
+
+<details>
+<summary><b>Do achievements count?</b></summary>
+<br>
+Unlocks inside the game all work. On the APK, Steam and Google Play achievements
+do not, since it is connected to neither.
+</details>
+
+<details>
+<summary><b>Do I sign in to anything? Where do my credentials go?</b></summary>
+<br>
+The APK has no sign-in at all. The Zygisk module does not touch the official
+app's own Google sign-in. The mod sends nothing over the network; its one link,
+the Patreon button, opens your browser. The build only downloads its tools, your
+game files stay on your machine, and all of it can be read in this repository.
+</details>
+
+<details>
+<summary><b>It uses a lot of battery</b></summary>
+<br>
+Every frame runs the background and CRT shaders over the whole screen. Set
+<b>Options → Settings → Graphics → Frame Rate</b> to 30, which halves that work on
+a 60 Hz screen and more on a 90 or 120 Hz one.
+</details>
+
 ## Troubleshooting
 
 <details>
@@ -340,15 +407,16 @@ Make sure the first-run extraction finished: <code>src/game.lua</code>,
 <summary><b>The build fails</b></summary>
 <br>
 Check <code>python --version</code> (3.6+). The first build downloads the JDK and
-build tools (about 250 MB), so it needs an internet connection.
+build tools (about 250 MB), so it needs an internet connection. That can take a
+few minutes: it is working as long as the progress bar moves.
 </details>
 
 <details>
 <summary><b>A black ellipse or a coloured sliver at the bottom</b></summary>
 <br>
-The CRT shader does this in portrait on some phones. Rebuild with
-<code>--disable-crt</code>; with Zygisk, flash again and answer yes to
-<i>Disable CRT</i>.
+Fixed in 1.0.1: update first. If you still see one, please open an issue with
+your phone's model. Until then, rebuild with <code>--disable-crt</code>; with
+Zygisk, flash again and answer yes to <i>Disable CRT</i>.
 </details>
 
 <details>

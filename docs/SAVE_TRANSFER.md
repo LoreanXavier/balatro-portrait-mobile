@@ -78,7 +78,7 @@ the surrounding files, e.g. `chown -R u0_aNNN:u0_aNNN` and `restorecon`).
 
 **3.** Launch and load profile 1. Your unlocks and progression should be there.
 
-> Mods live in `game/Mods/`, saves live in `game/<slot>/`. Different folders,
+> Mods live in `ASET/Mods/`, saves live in `game/<slot>/`. Different folders,
 > don't mix them. See [MODDING.md](MODDING.md) for the mod side.
 
 The Takeout route was documented by the community in

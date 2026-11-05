@@ -20,6 +20,16 @@ wait_title()
 milestone('title')
 screen_check('title')
 
+step('frame rate', function()
+    if not (G.F_PORTRAIT and love.system.getOS() == 'Android') then return end
+    for choice, cap in ipairs({false, 60, 30}) do
+        G.FUNCS.change_portrait_fps({to_key = choice})
+        frames(2)
+        check(not cap or G.FPS_CAP == cap, 'frame rate option ' .. choice .. ' sets the cap')
+    end
+    G.FUNCS.change_portrait_fps({to_key = 1})
+end)
+
 step('options', function()
     tap_ui({button = 'options'})
     settle_ui()

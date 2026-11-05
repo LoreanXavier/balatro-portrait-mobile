@@ -2,7 +2,7 @@ PORTRAIT_CONFIG = {
     -- Single source of truth for the mod version: build.py parses it from
     -- here, and the Zygisk packaging refuses to ship a module.prop that
     -- disagrees with it. Bump this, module.prop and the CHANGELOG together.
-    version = "1.0.0",
+    version = "1.0.1",
     scale_factor = 0.63,
     hud_top_space = 13,
     bottom_margin = 0.35,
@@ -979,6 +979,11 @@ end
 --portrait_layouts.lua (which describes them).
 PORTRAIT_LAYOUTS = {'classic', 'one_thumb', 'focus'}
 PORTRAIT_LAYOUT_NAMES = {'Classic', 'One-Thumb', 'Focus'}
+
+-- Options > Graphics. The first follows fps_cap above; a lower cap is what saves
+-- battery, since every frame runs the background and CRT shaders over the screen.
+PORTRAIT_FPS_NAMES = {'Screen', '60', '30'}
+PORTRAIT_FPS_CAPS = {false, 60, 30}
 
 function portrait_layout()
     local i = G and G.SETTINGS and G.SETTINGS.portrait_layout or 1

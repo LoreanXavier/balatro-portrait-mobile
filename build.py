@@ -186,10 +186,19 @@ FLAME_PRECISION_PATCHED = FLAME_PRECISION_ANCHOR + """
 FLAME_EFFECT_ORIGINAL = "vec4 effect( vec4 colour, Image texture, vec2 texture_coords, vec2 screen_coords )"
 FLAME_EFFECT_PATCHED  = "mediump vec4 effect( mediump vec4 colour, Image texture, mediump vec2 texture_coords, mediump vec2 screen_coords )"
 
+# The noise seed is tc.x * tc.y * time * 1000 with time starting at 400, so it
+# runs past 65504, the largest half-float, wherever tc.x * tc.y > 0.16. A GPU
+# that runs this at half precision gets inf there, then NaN, and draws black:
+# the black ellipse in the corner, whose edge is that curve. The official
+# Android shader has these lines commented out; game.lua still sends noise_fac,
+# so they have to stay, with time wrapped to keep the seed under the limit.
+CRT_NOISE_SEED_UNSAFE = "    MY_HIGHP_OR_MEDIUMP number x = (tc.x - mod(tc.x, 0.002)) * (tc.y - mod(tc.y, 0.0013)) * time * 1000.0;"
+CRT_NOISE_SEED_SAFE   = "    MY_HIGHP_OR_MEDIUMP number x = (tc.x - mod(tc.x, 0.002)) * (tc.y - mod(tc.y, 0.0013)) * mod(time, 32.0) * 1000.0;"
+
 CRT_NOISE_COMMENTED_LINES = (
     ("//extern MY_HIGHP_OR_MEDIUMP number noise_fac;", "extern MY_HIGHP_OR_MEDIUMP number noise_fac;"),
     ("    //MY_HIGHP_OR_MEDIUMP number x = (tc.x - mod(tc.x, 0.002)) * (tc.y - mod(tc.y, 0.0013)) * time * 1000.0;",
-     "    MY_HIGHP_OR_MEDIUMP number x = (tc.x - mod(tc.x, 0.002)) * (tc.y - mod(tc.y, 0.0013)) * time * 1000.0;"),
+     CRT_NOISE_SEED_SAFE),
     ("\t//x = mod( x, 13.0 ) * mod( x, 123.0 );",
      "\tx = mod( x, 13.0 ) * mod( x, 123.0 );"),
     ("\t//MY_HIGHP_OR_MEDIUMP number dx = mod( x, 0.11 )/0.11;",
@@ -539,6 +548,11 @@ def _apply_crt_slider_mask_patch(src_dir):
         changed = True
         print("  Android CRT shader noise uniform restored.")
 
+    if CRT_NOISE_SEED_UNSAFE in content:
+        content = content.replace(CRT_NOISE_SEED_UNSAFE, CRT_NOISE_SEED_SAFE)
+        changed = True
+        print("  CRT noise kept inside half precision (the black ellipse).")
+
     if not changed:
         return
 
@@ -652,32 +666,6 @@ STEAMODDED_REPO = "Steamodded/smods"
 # (tools/headless, --mods smods-...): what --steamodded bundles unless told
 # otherwise. 'latest' still fetches the newest, which may not be tested yet.
 STEAMODDED_TESTED = "26.1002.0"
-
-
-def _patch_lovely_mod_dir(apk_out):
-    """Repoint Lovely's mod folder from save/ASET/Mods to save/game/Mods so it sits
-    inside the LOVE save dir, which the Lua side can write to. This is what lets a
-    bundled mod (build.py --steamodded) install itself on first run."""
-    old, new = b"/save/ASET/Mods", b"/save/game/Mods"
-    patched = 0
-    for arch in ("arm64-v8a", "armeabi-v7a"):
-        so = os.path.join(apk_out, "lib", arch, "liblove.so")
-        if not os.path.exists(so):
-            continue
-        with open(so, "rb") as f:
-            data = f.read()
-        if new in data:
-            patched += 1
-            continue
-        count = data.count(old)
-        if count != 1:
-            print(f"  Warning: skipped mod-dir patch for {arch} (found {count} matches).")
-            continue
-        with open(so, "wb") as f:
-            f.write(data.replace(old, new))
-        patched += 1
-    if not patched:
-        raise RuntimeError("could not repoint Lovely mod directory (liblove.so unpatched)")
 
 
 def _steamodded_versions(limit=15):
@@ -1170,9 +1158,6 @@ def build_apk(profiler=None):
         _patch_sdl_portrait_orientation(apk_out)
         print("  [Lovely] SDL orientation patched.")
 
-        _patch_lovely_mod_dir(apk_out)
-        print("  [Lovely] Mod folder repointed to save/game/Mods.")
-
         # Icons
         for density in ["hdpi","mdpi","xhdpi","xxhdpi","xxxhdpi"]:
             src = os.path.join(WORKDIR, "res", f"drawable-{density}", "love.png")
@@ -1203,7 +1188,7 @@ def build_apk(profiler=None):
     print()
     print("  Mod installation:")
     print("  1. Launch the game once")
-    print("  2. Put mod folders in game/Mods/")
+    print("  2. Put mod folders in ASET/Mods/")
     print("  3. Restart the game")
     print("  See docs/MODDING.md for no-root, root, and ADB paths.")
 
@@ -1429,6 +1414,10 @@ def _resolve_import_save(flag_path, interactive):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def main():
+    # Through a pipe (Git Bash, an IDE) Python holds its output back, and the
+    # build looks stuck after the last question.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(line_buffering=True)
     print("=" * 60)
     print("  BALATRO PORTRAIT MOBILE - BUILD")
     print("=" * 60)
@@ -1497,6 +1486,10 @@ def main():
     import_mods       = dict([steamodded]) if steamodded else None
 
     total = 4 if build_ios else 3
+
+    print()
+    print("  Starting the build. The first one downloads about 250 MB and takes")
+    print("  a few minutes; later builds take under a minute.")
 
     # ── Step 1 — Resources ──────────────────────────────────────────────────
     src_state = _load_patches().src_state()

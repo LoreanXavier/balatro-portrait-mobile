@@ -18,7 +18,7 @@ python tools/headless/run.py --scenario all --mods smods-26,talisman   # with mo
 python tools/headless/run.py --scenario mods --mods smods-26 --source vanilla  # unmodded game as a baseline
 python tools/headless/run.py --scenario all --source zygisk   # the game as the Zygisk module makes it
 python tools/headless/suite.py --quick               # 24 runs, about a minute, while working
-python tools/headless/suite.py                       # all 443 runs, before a release
+python tools/headless/suite.py                       # all 525 runs, before a release
 python tools/headless/suite.py --only smods-1        # one group of the matrix
 ```
 

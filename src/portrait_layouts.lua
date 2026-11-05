@@ -149,7 +149,8 @@ G.FUNCS.portrait_chip_UI_set = function(e)
 end
 G.FUNCS.portrait_hand_mult_UI_set = fitted('hand_mult_UI_set', true)
 G.FUNCS.portrait_hand_text_UI_set = fitted('hand_text_UI_set', true)
-G.FUNCS.portrait_hand_chip_total_UI_set = fitted('hand_chip_total_UI_set')
+-- Fixed too: at the game's size the total grew the score line into the played cards.
+G.FUNCS.portrait_hand_chip_total_UI_set = fitted('hand_chip_total_UI_set', true)
 
 local function count_text(ref_table, ref_value, colour, scale, id, prefix, fit_w)
   return {n=G.UIT.O, config={id = id, func = 'portrait_fit_text', fit_w = fit_w or 1.3, object = DynaText({string = {{ref_table = ref_table, ref_value = ref_value, prefix = prefix}}, font = en_font(), colours = {colour}, shadow = true, scale = scale})}}

@@ -10,11 +10,11 @@ The normal path for most players.
 - Package name: `com.unofficial.balatro`
 - Mod runtime: Lovely is always embedded in Android builds
 - Root: not required
-- Mod folder: `game/Mods/` inside the app storage
+- Mod folder: `ASET/Mods/` inside the app storage
 - Direct root path:
 
 ```text
-/data/user/0/com.unofficial.balatro/files/save/game/Mods/
+/data/user/0/com.unofficial.balatro/files/save/ASET/Mods/
 ```
 
 ### Bundle Steamodded at build time (easiest)
@@ -34,6 +34,15 @@ README lists which mods were run with it.
 It installs itself on the first launch. Restart the game once and Steamodded is
 active.
 
+Mods from a build before 1.0.1 were in `game/Mods/`. They move to `ASET/Mods/` by
+themselves on the first launch and load from the second.
+
+### Install mods with Balatro Mod Manager
+
+[Balatro Mod Manager for Android](https://github.com/danitsdev/balatro-mod-manager-android)
+installs, updates and removes mods from Thunderstore on the phone. Open the game
+once, then in the manager pick the Balatro app's folder, the one with `ASET` in it.
+
 ### Install mods without root
 
 1. Build and install the APK from `python build.py`.
@@ -41,7 +50,7 @@ active.
 3. Install [Material Files](https://play.google.com/store/apps/details?id=me.zhanghai.android.files).
 4. Material Files menu -> **Add storage...** -> **External storage**.
 5. In the Android picker, choose the **Balatro** app and tap **Use this folder**.
-6. Open `game/Mods/`.
+6. Open `ASET/Mods/`.
 7. Copy mod folders there.
 8. Restart Balatro.
 
@@ -52,7 +61,7 @@ This Material Files flow comes from Lovely Mobile Maker's FAQ and avoids root.
 Copy mod folders to:
 
 ```text
-/data/user/0/com.unofficial.balatro/files/save/game/Mods/
+/data/user/0/com.unofficial.balatro/files/save/ASET/Mods/
 ```
 
 ## Path B: Experimental Zygisk module
@@ -99,14 +108,14 @@ Material Files sidebar. Pick the right package: `com.unofficial.balatro` for the
 rootless builder, `com.playstack.balatro.android` for the Zygisk app.
 
 **"Mods folder doesn't exist."** Launch the game once after installing. The
-rootless builder creates `game/Mods/` on the first run.
+rootless builder creates `ASET/Mods/` on the first run.
 
 **"Game crashes after adding mods."** Not every PC mod works on Android.
 Shader-heavy mods can crash; remove the mod's `resources/shaders/` folder if it
-ships desktop shaders. Check `game/Mods/lovely/log/` for Lovely logs.
+ships desktop shaders. Check `ASET/Mods/lovely/log/` for Lovely logs.
 
 **"Mod doesn't load / game runs vanilla."** Make sure the mod folder is directly
-inside `game/Mods/`, not nested one level deeper, and that you are on the
+inside `ASET/Mods/`, not nested one level deeper, and that you are on the
 rootless builder path.
 
 ## Notes

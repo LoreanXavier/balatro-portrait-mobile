@@ -2,6 +2,35 @@
 
 All notable changes to Balatro Portrait Mobile.
 
+## [v1.0.1](https://github.com/LoreanXavier/balatro-portrait-mobile/releases/tag/v1.0.1) - 2026-11-06
+
+- **The black ellipse is fixed.** The CRT shader's noise multiplies the screen
+  position by a time that starts at 400, and past 65504 that no longer fits a
+  half float. A GPU that runs the shader at half precision then draws everything
+  beyond that curve black. The time now wraps, so the number stays in range. The
+  official Android shader has the noise commented out, and the build had put it
+  back as it was. The CRT shader stays on, and `--disable-crt` is still there.
+- **The APK's mod folder is `ASET/Mods/` again** (#1), where Lovely looks by
+  default and where
+  [Balatro Mod Manager for Android](https://github.com/danitsdev/balatro-mod-manager-android)
+  looks too. Mods in the old `game/Mods/` move there by themselves on the first
+  launch and load from the second, and so does anything put in the old place
+  later. A mod bundled with `--steamodded` goes there too.
+- **Frame Rate** in Options > Settings > Graphics: the screen's rate as before,
+  or 60, or 30 to save battery.
+- **One-Thumb's score line keeps its height.** The hand's total came up larger than
+  the line had room for, which made the line taller and pushed it into the played
+  cards on a tablet.
+- **The build says it is working.** It prints what the first run is about to
+  download, and its output no longer sits in a buffer when run from Git Bash or
+  an IDE.
+- A new FAQ in the README: ready-made APKs, the Google Play version, cloud saves,
+  achievements, sign-in and battery.
+- `tools/headless/suite.py` runs the whole test matrix in one pool, three times as
+  fast as before. New scenarios: `crt` draws the ellipse under a half precision
+  emulation and checks the shipped shader does not, and `mod_folder` covers the
+  move to `ASET/Mods/`.
+
 ## [v1.0.0](https://github.com/LoreanXavier/balatro-portrait-mobile/releases/tag/v1.0.0) - 2026-11-05
 
 **The reboot.** A new repository, a new version line, two new layouts, and a
