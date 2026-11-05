@@ -2,9 +2,7 @@
 
 # Balatro Portrait Mobile
 
-<a href="https://github.com/LoreanXavier/balatro-portrait-mobile/releases/download/v1.0.0/balatro_portrait_promo.mp4"><img src="docs/images/promo.webp" width="400" alt="Promo video: the phone turns from landscape to portrait, then the three layouts, swipe to play, the shop, mods and the install routes"/></a>
-
-<sub><a href="https://github.com/LoreanXavier/balatro-portrait-mobile/releases/download/v1.0.0/balatro_portrait_promo.mp4">Watch in full quality</a></sub>
+<img src="docs/images/promo.webp" width="400" alt="Promo video: the phone turns from landscape to portrait, then the three layouts, swipe to play, the shop, mods and the install routes"/>
 
 **Balatro in portrait, played with one hand.**<br>
 Android and iPhone · three layouts · Steamodded mods · every language the game ships
@@ -72,7 +70,6 @@ from it. Pick the row that matches you:
 | `balatro_portrait.zip` | the Zygisk module, flashable from Magisk, KernelSU or APatch | rooted Android |
 | `Source code (zip)` | the build scripts and the portrait code, at this release | building the APK or the IPA |
 | `SHA256SUMS.txt` | checksums | checking a download |
-| `balatro_portrait_promo.mp4` | the promo video in full quality | watching it |
 
 There is no ready-made APK or IPA, and there will not be one: it would contain
 the whole game. Yours takes a few minutes to build.
