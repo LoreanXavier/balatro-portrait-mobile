@@ -24,7 +24,7 @@ Android and iPhone · three layouts · Steamodded mods · every language the gam
   </tr>
 </table>
 
-**[Install](#install) · [What's new in 1.0.1](#whats-new-in-101) · [Mods](#mods) · [Save transfer](#save-transfer) · [Help](#troubleshooting) · [Support](#support-the-mod)**
+**[Install](#install) · [What's new in 1.0.2](#whats-new-in-102) · [Mods](#mods) · [Save transfer](#save-transfer) · [Help](#troubleshooting) · [Support](#support-the-mod)**
 
 </div>
 
@@ -182,10 +182,14 @@ looks off, send the **Options → Diagnostics** report and a screenshot in an
 
 ---
 
+## What's new in 1.0.2
+
+- **The black ellipse, second try.** 1.0.1 did not cure it on a Pixel 7. The CRT
+  shader's noise, which draws that curve, is now left out on every install route,
+  as in the official Android game. The CRT effect stays on.
+
 ## What's new in 1.0.1
 
-- **The black ellipse is fixed**, on every install route, with the CRT shader
-  left on. `--disable-crt` is no longer needed for it.
 - **The APK's mod folder is `ASET/Mods/` again**, so
   [Balatro Mod Manager for Android](https://github.com/danitsdev/balatro-mod-manager-android)
   works with it. Your mods move there by themselves: open the game once, then
@@ -271,7 +275,7 @@ python build.py --steamodded latest    # the newest release (may not be tested y
 
 A bundled mod installs itself on the first launch; restart once and it is on.
 
-**Tested for 1.0.1** in all three layouts, on a 360 dp phone, a 412 dp phone,
+**Tested for 1.0.2** in all three layouts, on a 360 dp phone, a 412 dp phone,
 an iPhone SE and a tablet: start, every menu, a full run, the stress test and
 the Mods menu.
 
@@ -414,8 +418,8 @@ few minutes: it is working as long as the progress bar moves.
 <details>
 <summary><b>A black ellipse or a coloured sliver at the bottom</b></summary>
 <br>
-Fixed in 1.0.1: update first. If you still see one, please open an issue with
-your phone's model. Until then, rebuild with <code>--disable-crt</code>; with
+Update to 1.0.2 first. If you still see one, please open an issue with your
+phone's model. Until then, rebuild with <code>--disable-crt</code>; with
 Zygisk, flash again and answer yes to <i>Disable CRT</i>.
 </details>
 

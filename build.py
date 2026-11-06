@@ -186,25 +186,30 @@ FLAME_PRECISION_PATCHED = FLAME_PRECISION_ANCHOR + """
 FLAME_EFFECT_ORIGINAL = "vec4 effect( vec4 colour, Image texture, vec2 texture_coords, vec2 screen_coords )"
 FLAME_EFFECT_PATCHED  = "mediump vec4 effect( mediump vec4 colour, Image texture, mediump vec2 texture_coords, mediump vec2 screen_coords )"
 
-# The noise seed is tc.x * tc.y * time * 1000 with time starting at 400, so it
-# runs past 65504, the largest half-float, wherever tc.x * tc.y > 0.16. A GPU
-# that runs this at half precision gets inf there, then NaN, and draws black:
-# the black ellipse in the corner, whose edge is that curve. The official
-# Android shader has these lines commented out; game.lua still sends noise_fac,
-# so they have to stay, with time wrapped to keep the seed under the limit.
-CRT_NOISE_SEED_UNSAFE = "    MY_HIGHP_OR_MEDIUMP number x = (tc.x - mod(tc.x, 0.002)) * (tc.y - mod(tc.y, 0.0013)) * time * 1000.0;"
-CRT_NOISE_SEED_SAFE   = "    MY_HIGHP_OR_MEDIUMP number x = (tc.x - mod(tc.x, 0.002)) * (tc.y - mod(tc.y, 0.0013)) * mod(time, 32.0) * 1000.0;"
+# The CRT shader's noise is the one place that multiplies tc.x by tc.y, and on
+# some phones (Pixel 7, issue #2) everything past x * y = 0.17 comes out black:
+# the black ellipse in the corner, whose edge is that curve. Keeping the numbers
+# inside half precision, as 1.0.1 did, did not cure it. The official Android
+# shader has these lines commented out, so they stay out on every route. game.lua
+# still sends noise_fac and send() fails on a uniform the shader does not use, so
+# the line that fades towards the noise stays, without the noise.
+CRT_NOISE_OFF = "\trgb_result = (1.0-clamp( noise_fac*artifact_amplifier, 0.0,1.0 ))*rgb_result;"
+CRT_NOISE_RGB = "rgb_result = (1.0-clamp( noise_fac*artifact_amplifier, 0.0,1.0 ))*rgb_result + dx * clamp( noise_fac*artifact_amplifier, 0.0,1.0 ) * vec3(1.0,1.0,1.0);"
+CRT_NOISE_SEED = "MY_HIGHP_OR_MEDIUMP number x = (tc.x - mod(tc.x, 0.002)) * (tc.y - mod(tc.y, 0.0013)) * time * 1000.0;"
 
+# The Android shader, as it comes.
 CRT_NOISE_COMMENTED_LINES = (
     ("//extern MY_HIGHP_OR_MEDIUMP number noise_fac;", "extern MY_HIGHP_OR_MEDIUMP number noise_fac;"),
-    ("    //MY_HIGHP_OR_MEDIUMP number x = (tc.x - mod(tc.x, 0.002)) * (tc.y - mod(tc.y, 0.0013)) * time * 1000.0;",
-     CRT_NOISE_SEED_SAFE),
-    ("\t//x = mod( x, 13.0 ) * mod( x, 123.0 );",
-     "\tx = mod( x, 13.0 ) * mod( x, 123.0 );"),
-    ("\t//MY_HIGHP_OR_MEDIUMP number dx = mod( x, 0.11 )/0.11;",
-     "\tMY_HIGHP_OR_MEDIUMP number dx = mod( x, 0.11 )/0.11;"),
-    ("\t//rgb_result = (1.0-clamp( noise_fac*artifact_amplifier, 0.0,1.0 ))*rgb_result + dx * clamp( noise_fac*artifact_amplifier, 0.0,1.0 ) * vec3(1.0,1.0,1.0);",
-     "\trgb_result = (1.0-clamp( noise_fac*artifact_amplifier, 0.0,1.0 ))*rgb_result + dx * clamp( noise_fac*artifact_amplifier, 0.0,1.0 ) * vec3(1.0,1.0,1.0);"),
+    ("\t//" + CRT_NOISE_RGB, CRT_NOISE_OFF),
+)
+
+# The desktop shader, and a src/ left by 1.0.1, which wrapped time in the seed.
+CRT_NOISE_LIVE_LINES = (
+    ("    " + CRT_NOISE_SEED, "    //" + CRT_NOISE_SEED),
+    ("    " + CRT_NOISE_SEED.replace("* time *", "* mod(time, 32.0) *"), "    //" + CRT_NOISE_SEED),
+    ("\tx = mod( x, 13.0 ) * mod( x, 123.0 );", "\t//x = mod( x, 13.0 ) * mod( x, 123.0 );"),
+    ("\tMY_HIGHP_OR_MEDIUMP number dx = mod( x, 0.11 )/0.11;", "\t//MY_HIGHP_OR_MEDIUMP number dx = mod( x, 0.11 )/0.11;"),
+    ("\t" + CRT_NOISE_RGB, CRT_NOISE_OFF),
 )
 
 GAME_LOVE_EXCLUDE = {"smali", ".pyc", "__pycache__", ".git", ".gitignore", ".bak", ".build_cache.json"}
@@ -538,26 +543,15 @@ def _apply_crt_slider_mask_patch(src_dir):
             changed = True
             print("  CRT edge mask now follows the CRT slider.")
 
-    restored_noise = 0
-    for original, replacement in CRT_NOISE_COMMENTED_LINES:
-        if original in content:
-            content = content.replace(original, replacement)
-            restored_noise += 1
-
-    if restored_noise:
+    before = content
+    for original, replacement in CRT_NOISE_COMMENTED_LINES + CRT_NOISE_LIVE_LINES:
+        content = content.replace(original, replacement)
+    if content != before:
         changed = True
-        print("  Android CRT shader noise uniform restored.")
-
-    if CRT_NOISE_SEED_UNSAFE in content:
-        content = content.replace(CRT_NOISE_SEED_UNSAFE, CRT_NOISE_SEED_SAFE)
-        changed = True
-        print("  CRT noise kept inside half precision (the black ellipse).")
+        print("  CRT noise left out, as in the official Android shader.")
 
     if not changed:
         return
-
-    if restored_noise and restored_noise != len(CRT_NOISE_COMMENTED_LINES):
-        print("  Warning: Android CRT shader noise patch only partially applied.")
 
     with open(crt_shader, "w", encoding="utf-8") as f:
         f.write(content)
