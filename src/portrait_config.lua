@@ -1056,6 +1056,9 @@ end
 --OVERLAY_MARGIN clear on each side: the frame's padding first, then its card
 --rows (a title row spreads its cards over whatever width it gets), then the
 --minimum widths of everything in it. Mods' menus go through the same path.
+--Text does not shrink with any of that, so a menu still too wide after it gets
+--its side-by-side columns put one under the other, with the minimum widths it
+--had before: Steamodded's Config tab ran off both edges in Spanish (#3).
 local OVERLAY_MARGIN = 0.25
 
 local function overlay_width(box)
@@ -1092,6 +1095,42 @@ local function lift_overlay(box)
     box:align_to_major()
 end
 
+local function recalculate_overlay(box)
+    local nested = {}
+    each_overlay_node(box.UIRoot, function() end, nested)
+    for _, b in ipairs(nested) do b:recalculate() end
+    box:recalculate()
+end
+
+--A row is stretched to the widest one in its menu, so what it needs is measured
+--from its columns. The tab bar stays a row.
+local function row_of_columns_width(node)
+    local kids = node.children or {}
+    if node.UIT ~= G.UIT.R or #kids < 2 then return nil end
+    local padding = node.config.padding or G.UIT.padding
+    local w = padding
+    for _, c in ipairs(kids) do
+        if c.UIT ~= G.UIT.C or not c.T or c.config.id == 'tab_shoulders' then return nil end
+        w = w + c.T.w + padding
+    end
+    return w
+end
+
+local function stack_widest_row(box)
+    local row, widest = nil, 0
+    each_overlay_node(box.UIRoot, function(node)
+        local w = row_of_columns_width(node)
+        if w and w > widest then row, widest = node, w end
+    end)
+    if not row then return false end
+    for _, c in ipairs(row.children) do
+        c.UIT = G.UIT.R
+        c.config.align = c.config.align or 'cm'
+    end
+    recalculate_overlay(box)
+    return true
+end
+
 local function fit_overlay_width(box)
     local avail = love.graphics.getWidth()/(G.TILESCALE*G.TILESIZE) - 2*OVERLAY_MARGIN
     local function over() return overlay_width(box) - avail end
@@ -1122,25 +1161,60 @@ local function fit_overlay_width(box)
         box:recalculate()
     end
 
-    for _ = 1, 4 do
-        local excess = over()
-        if excess <= 0.01 then return end
-        local f = avail/(avail + excess)
-        local nested = {}
-        each_overlay_node(box.UIRoot, function(node)
-            if node ~= box.UIRoot and node.config.minw and node.config.minw > 0.5 then
-                node.config.minw = node.config.minw*f
-            end
-        end, nested)
-        for _, b in ipairs(nested) do b:recalculate() end
-        box:recalculate()
+    local function squeeze()
+        for _ = 1, 4 do
+            local excess = over()
+            if excess <= 0.01 then return end
+            local f = avail/(avail + excess)
+            each_overlay_node(box.UIRoot, function(node)
+                if node ~= box.UIRoot and node.config.minw and node.config.minw > 0.5 then
+                    node.config.minw = node.config.minw*f
+                end
+            end)
+            recalculate_overlay(box)
+        end
     end
+
+    local minw = {}
+    each_overlay_node(box.UIRoot, function(node) minw[node] = node.config.minw end)
+    squeeze()
+    if over() <= 0.01 then return end
+
+    for node, w in pairs(minw) do node.config.minw = w end
+    recalculate_overlay(box)
+    for _ = 1, 4 do
+        if over() <= 0.01 or not stack_widest_row(box) then break end
+    end
+    squeeze()
 end
 
 function portrait_fit_overlay(box)
     if not (G and G.F_PORTRAIT and box and box.UIRoot and G.TILESCALE and G.TILESIZE) then return end
     fit_overlay_width(box)
     lift_overlay(box)
+end
+
+--The language box sits beside the menu column, and a long name ("Español
+--(España)") made it wider than the room there: it lay over the column (#3).
+function portrait_language_label_maxw()
+    if not (G and G.F_PORTRAIT and G.MAIN_MENU_UI and G.ROOM and G.ROOM.T) then return nil end
+    local room, menu = G.ROOM.T, G.MAIN_MENU_UI.T
+    local clearance = (PORTRAIT_CONFIG.main_menu and PORTRAIT_CONFIG.main_menu.corner_clearance) or 0.15
+    return (room.x + room.w) - (menu.x + menu.w) - clearance - 2*0.2
+end
+
+--Steamodded puts its version flush with the top right corner, where the CRT
+--curve takes its last letters (#3). It gets the inset of the game's own version
+--in the other corner.
+function portrait_inset_title_labels()
+    if not (G and G.F_PORTRAIT and G.I and G.I.UIBOX) then return end
+    for _, box in pairs(G.I.UIBOX) do
+        local c, a = box.config, box.alignment
+        if c and a and a.offset and c.major == G.ROOM_ATTACH and c.align == 'tri' and a.offset.x == 0 then
+            a.offset.x = -0.6
+            box:align_to_major()
+        end
+    end
 end
 
 function get_portrait_room_fit_delta(box, opts)

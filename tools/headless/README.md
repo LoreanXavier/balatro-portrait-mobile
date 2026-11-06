@@ -18,7 +18,7 @@ python tools/headless/run.py --scenario all --mods smods-26,talisman   # with mo
 python tools/headless/run.py --scenario mods --mods smods-26 --source vanilla  # unmodded game as a baseline
 python tools/headless/run.py --scenario all --source zygisk   # the game as the Zygisk module makes it
 python tools/headless/suite.py --quick               # 24 runs, about a minute, while working
-python tools/headless/suite.py                       # all 525 runs, before a release
+python tools/headless/suite.py                       # all 574 runs, before a release
 python tools/headless/suite.py --only smods-1        # one group of the matrix
 ```
 
@@ -43,7 +43,7 @@ player's pace), waits follow the game clock or wait for the screen to settle, an
 the intro is skipped (the `boot` scenario keeps it).
 
 `suite.py` runs every source, mod set, language, scenario and device as one job in
-a single pool, longest first. All 443 runs took 23 minutes on a Ryzen 7 7800X3D
+a single pool, longest first. All 574 runs took 28 minutes on a Ryzen 7 7800X3D
 with an RTX 3090 and 32 GB of RAM, against 69 for the same matrix one group after
 another in real time. A run that passes leaves nothing behind; one that fails keeps
 its folder under `.headless/out/suite/`. Each job has its own profile, so parallel

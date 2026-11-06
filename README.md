@@ -24,7 +24,7 @@ Android and iPhone · three layouts · Steamodded mods · every language the gam
   </tr>
 </table>
 
-**[Install](#install) · [What's new in 1.0.2](#whats-new-in-102) · [Mods](#mods) · [Save transfer](#save-transfer) · [Help](#troubleshooting) · [Support](#support-the-mod)**
+**[Install](#install) · [What changed with Reboot 1.x](#what-changed-with-reboot-1x) · [Mods](#mods) · [Save transfer](#save-transfer) · [Help](#troubleshooting) · [Support](#support-the-mod)**
 
 </div>
 
@@ -182,29 +182,10 @@ looks off, send the **Options → Diagnostics** report and a screenshot in an
 
 ---
 
-## What's new in 1.0.2
-
-- **The black ellipse, second try.** 1.0.1 did not cure it on a Pixel 7. The CRT
-  shader's noise, which draws that curve, is now left out on every install route,
-  as in the official Android game. The CRT effect stays on.
-
-## What's new in 1.0.1
-
-- **The APK's mod folder is `ASET/Mods/` again**, so
-  [Balatro Mod Manager for Android](https://github.com/danitsdev/balatro-mod-manager-android)
-  works with it. Your mods move there by themselves: open the game once, then
-  restart it.
-- **Options → Settings → Graphics → Frame Rate**: 30 or 60 instead of your
-  screen's rate, to save battery.
-- One-Thumb's score line keeps its height when the hand's total comes up, so it
-  no longer touches the played cards on a tablet.
-
-Everything else is in the [changelog](CHANGELOG.md).
-
-## What's new in 1.0.0
+## What changed with Reboot 1.x?
 
 > [!IMPORTANT]
-> **1.0.0 is a reboot.** The project has a new home (this repository) and a new
+> **1.x is a reboot.** The project has a new home (this repository) and a new
 > version line. The old repository and its account are gone, and the 2.x
 > releases and issues with them. Coming from 2.x? See
 > [the notes below](#coming-from-2x).
@@ -258,7 +239,7 @@ during a run.
 
 Still here: anti-jitter touch, refresh rate matched to your screen,
 **Options → Diagnostics** for bug reports, save transfer.
-Everything, in detail: [CHANGELOG.md](CHANGELOG.md).
+Every release, in detail: [CHANGELOG.md](CHANGELOG.md).
 
 ---
 

@@ -29,7 +29,7 @@ ZYGISK_MOD_SETS = ["smods-26", "smods-26,talisman", "smods-26,amulet,cryptid"]
 LANG_SCENARIOS = ["layouts", "stress", "menus", "swipe"]
 
 # Rough length of a run, to start the long ones first.
-WEIGHT = {"run": 10, "layouts": 7, "stress": 7, "mods": 6, "swipe": 5, "menus": 3, "smoke": 2, "crt": 1, "mod_folder": 1}
+WEIGHT = {"run": 10, "layouts": 7, "stress": 7, "mods": 6, "swipe": 5, "menus": 3, "smoke": 2, "crt": 1, "mod_folder": 1, "mod_menus": 1}
 
 
 def group(name, scenarios, devices, source="src", mods="", lang=""):
@@ -43,6 +43,9 @@ def full_matrix():
     groups += [group("zygisk-" + m, R.SUITE + ["mods"], ZYGISK_PHONES, source="zygisk", mods=m) for m in ZYGISK_MOD_SETS]
     groups += [group(m, R.SUITE + ["mods"], PHONES, mods=m) for m in MOD_SETS]
     groups += [group(lang, LANG_SCENARIOS, LANG_PHONES, lang=lang) for lang in LANGS]
+    groups += [group("mod_menus", ["mod_menus"], PHONES, mods="smods-26")]
+    groups += [group("mod_menus-zygisk", ["mod_menus"], ZYGISK_PHONES, source="zygisk", mods="smods-26", lang="es_ES")]
+    groups += [group("mod_menus-" + lang, ["mod_menus"], LANG_PHONES, mods="smods-26", lang=lang) for lang in LANGS]
     return groups
 
 
@@ -50,6 +53,7 @@ def quick_matrix():
     return [group("src", R.SUITE, ["narrow", "phone", "tablet"]),
             group("zygisk", ["smoke", "menus"], ["phone"], source="zygisk"),
             group("smods-26,talisman", ["menus", "mods"], ["phone"], mods="smods-26,talisman"),
+            group("mod_menus-es_ES", ["mod_menus"], ["narrow"], mods="smods-26", lang="es_ES"),
             group("ru", ["menus"], ["narrow"], lang="ru"),
             group("ja", ["menus"], ["narrow"], lang="ja")]
 

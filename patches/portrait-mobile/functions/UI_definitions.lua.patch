@@ -3010,7 +3010,7 @@
 +  language.states.drag.can = false
 +  return {n=G.UIT.ROOT, config = {align = "cm", colour = G.C.CLEAR}, nodes={
 +    {n=G.UIT.R, config={align = "cm", padding = 0.2, r = 0.1, emboss = 0.1, colour = G.C.L_BLACK}, nodes={
-+      {n=G.UIT.R, config={align = "cm"}, nodes={
++      {n=G.UIT.R, config={align = "cm", maxw = portrait_language_label_maxw()}, nodes={
 +        {n=G.UIT.T, config={text = G.LANG and G.LANG.label or 'Language', scale = 0.4, colour = G.C.UI.TEXT_LIGHT, shadow = true}}
 +      }},
 +      {n=G.UIT.R, config={align = "cm"}, nodes={

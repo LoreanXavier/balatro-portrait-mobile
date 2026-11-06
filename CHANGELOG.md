@@ -4,16 +4,26 @@ All notable changes to Balatro Portrait Mobile.
 
 ## [v1.0.2](https://github.com/LoreanXavier/balatro-portrait-mobile/releases/tag/v1.0.2) - 2026-11-06
 
-- **The black ellipse, second try** (#2). Wrapping the time in 1.0.1 did not cure
-  it on a Pixel 7, so the half float overflow given there as the cause was wrong
-  or not the whole story. The CRT shader's noise is the only code that multiplies
-  the two screen coordinates, the shape of the black area, and the official
-  Android shader has it commented out. It now stays out on every route, as
-  there. The grain it added was too faint to see. The CRT shader stays on, and
-  `--disable-crt` is still there.
+- **The black ellipse is gone** (#2), tested on the Pixel 7 that reported it.
+  Wrapping the time in 1.0.1 did not cure it there, so the half float overflow
+  given there as the cause was wrong or not the whole story. The CRT shader's
+  noise is the only code that multiplies the two screen coordinates, the shape of
+  the black area, and the official Android shader has it commented out. It now
+  stays out on every route, as there. The grain it added was too faint to see.
+  The CRT shader stays on, and `--disable-crt` is still there.
+- **Steamodded's Config tab fits the screen** (#3). In Spanish its two toggles
+  side by side ran it off both edges, and squeezing the menu only shrank its tabs
+  and buttons, not the text. A menu still too wide after squeezing now gets its
+  columns one under the other and keeps its buttons' size.
+- **Steamodded's version clears the corner** (#3). It sat flush with the top right
+  corner, where the CRT curve cut its last letters.
+- **The language box stays off the menu column** (#3). A long name such as
+  Español (España) made it wider than the room beside the column.
 - The `crt` headless scenario no longer draws the ellipse under an emulation of
   half precision, since that passed on a fix that failed on a phone. It checks
   that the shipped shader has no noise left and still takes `noise_fac`.
+- New `mod_menus` headless scenario: the title and the Mods screen's tabs with
+  Steamodded, in every language.
 
 ## [v1.0.1](https://github.com/LoreanXavier/balatro-portrait-mobile/releases/tag/v1.0.1) - 2026-11-06
 
