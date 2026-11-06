@@ -2,7 +2,7 @@ PORTRAIT_CONFIG = {
     -- Single source of truth for the mod version: build.py parses it from
     -- here, and the Zygisk packaging refuses to ship a module.prop that
     -- disagrees with it. Bump this, module.prop and the CHANGELOG together.
-    version = "1.0.2",
+    version = "1.0.3",
     scale_factor = 0.63,
     hud_top_space = 13,
     bottom_margin = 0.35,
@@ -51,6 +51,7 @@ PORTRAIT_CONFIG = {
         scale_mult = 1.0,
         hand_base_offset = 2.3, -- bottom space when only the sort row remains
         hand_card_scale = 1.15, -- the hand's cards take the room the buttons left
+        hand_lift = 0.22, -- the fan's outer corners stay above the swipe cue
     },
     -- Per layout style (see portrait_layout()); Classic uses the values above.
     -- hand_base_offset: room under the hand for that style's button bar;
@@ -1008,6 +1009,15 @@ function portrait_hand_scale()
         return PORTRAIT_CONFIG.swipe_only.hand_card_scale or 1
     end
     return 1
+end
+
+--How far Swipe Only's cards sit above the middle of their area. The cue and the
+--"8/8" stay where they are, level with each other, under the fan.
+function portrait_hand_lift()
+    if G and G.F_PORTRAIT and G.F_SWIPE_ONLY and PORTRAIT_CONFIG.swipe_only then
+        return PORTRAIT_CONFIG.swipe_only.hand_lift or 0
+    end
+    return 0
 end
 
 function apply_portrait_tooltip_fit(config)

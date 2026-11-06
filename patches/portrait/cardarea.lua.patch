@@ -187,7 +187,7 @@
                  card.T.x = card.T.x + card.shadow_parrallax.x/30
              end
          end
-@@ -453,7 +565,7 @@
+@@ -453,11 +565,12 @@
              if not card.states.drag.is then 
                  card.T.r = 0.2*(-#self.cards/2 - 0.5 + k)/(#self.cards)+ (G.SETTINGS.reduced_motion and 0 or 1)*0.02*math.sin(2*G.TIMERS.REAL+card.T.x)
                  local max_cards = math.max(#self.cards, self.config.temp_limit)
@@ -196,7 +196,12 @@
  
                  local highlight_height = G.HIGHLIGHT_H
                  if not card.highlighted then highlight_height = 0 end
-@@ -499,7 +611,13 @@
+                 card.T.y = self.T.y + self.T.h/2 - card.T.h/2 - highlight_height + (G.SETTINGS.reduced_motion and 0 or 1)*0.03*math.sin(0.666*G.TIMERS.REAL+card.T.x) + math.abs(0.5*(-#self.cards/2 + k-0.5)/(#self.cards))-0.2
++                if G.F_PORTRAIT then card.T.y = card.T.y - portrait_hand_lift() end
+                 card.T.x = card.T.x + card.shadow_parrallax.x/30
+             end
+         end
+@@ -499,7 +612,13 @@
                  local max_cards = math.max(#self.cards, self.config.temp_limit)
                  card.T.x = self.T.x + (self.T.w-self.card_w)*((k-1)/math.max(max_cards-1, 1) - 0.5*(#self.cards-max_cards)/math.max(max_cards-1, 1)) + 0.5*(self.card_w - card.T.w) + (self.config.card_limit == 1 and 0.5*(self.T.w - card.T.w) or 0)
                  local highlight_height = G.HIGHLIGHT_H
@@ -211,7 +216,7 @@
                  card.T.y = self.T.y + self.T.h/2 - card.T.h/2 - highlight_height
                  card.T.x = card.T.x + card.shadow_parrallax.x/30
              end
-@@ -512,7 +630,21 @@
+@@ -512,7 +631,21 @@
                  card.T.r = 0.1*(-#self.cards/2 - 0.5 + k)/(#self.cards)+ (G.SETTINGS.reduced_motion and 0 or 1)*0.02*math.sin(2*G.TIMERS.REAL+card.T.x)
                  local max_cards = math.max(#self.cards, self.config.temp_limit)
                  card.T.x = self.T.x + (self.T.w-self.card_w)*((k-1)/math.max(max_cards-1, 1) - 0.5*(#self.cards-max_cards)/math.max(max_cards-1, 1)) + 0.5*(self.card_w - card.T.w)
@@ -234,7 +239,7 @@
                      card.T.x = self.T.x + (self.T.w-self.card_w)*((k-1)/(#self.cards-1)) + 0.5*(self.card_w - card.T.w)
                  elseif #self.cards > 1 and self ~= G.consumeables then
                      card.T.x = self.T.x + (self.T.w-self.card_w)*((k - 0.5)/(#self.cards)) + 0.5*(self.card_w - card.T.w)
-@@ -536,7 +668,14 @@
+@@ -536,7 +669,14 @@
                      card.T.x = self.T.x + self.T.w/2 - self.card_w/2 + 0.5*(self.card_w - card.T.w)
                  end
                  local highlight_height = G.HIGHLIGHT_H

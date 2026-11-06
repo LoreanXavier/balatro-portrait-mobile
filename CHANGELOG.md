@@ -2,6 +2,15 @@
 
 All notable changes to Balatro Portrait Mobile.
 
+## [v1.0.3](https://github.com/LoreanXavier/balatro-portrait-mobile/releases/tag/v1.0.3) - 2026-11-07
+
+- **Swipe Only's cue stays clear of the hand** (#5). The corners of the fanned
+  cards ran up to 9 px into Play Hand and Discard on a 720 px wide screen, in all
+  three layouts. The cards now sit a little higher, and the cue and the "8/8"
+  stay where they were.
+- The `swipe` headless scenario checks every card's corners against the cue, with
+  cards picked at each end of the hand and in the middle.
+
 ## [v1.0.2](https://github.com/LoreanXavier/balatro-portrait-mobile/releases/tag/v1.0.2) - 2026-11-06
 
 - **The black ellipse is gone** (#2), tested on the Pixel 7 that reported it.

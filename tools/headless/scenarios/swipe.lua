@@ -37,6 +37,53 @@ local function pick(cards)
     wait(0.5)
 end
 
+local function cue_nodes()
+    local found = {}
+    local function walk(node)
+        if node.config and node.config.hint then found[#found + 1] = node end
+        for _, child in pairs(node.children or {}) do walk(child) end
+    end
+    walk(G.buttons.UIRoot)
+    return found
+end
+
+-- How far a card's drawn corners reach below the top of a cue, over its width.
+local function cue_overlap(cue)
+    local worst = -99
+    for _, card in ipairs(G.hand.cards) do
+        local w, h = card.VT.w * card.VT.scale / 2, card.VT.h * card.VT.scale / 2
+        local cx, cy, r = card.VT.x + card.VT.w / 2, card.VT.y + card.VT.h / 2, card.VT.r or 0
+        for _, p in ipairs({{-w, h}, {w, h}}) do
+            local x = cx + p[1] * math.cos(r) - p[2] * math.sin(r)
+            local y = cy + p[1] * math.sin(r) + p[2] * math.cos(r)
+            if x >= cue.T.x and x <= cue.T.x + cue.T.w then worst = math.max(worst, y - cue.T.y) end
+        end
+    end
+    return worst
+end
+
+-- The cue shows with cards selected, and the corners left down are the ones in
+-- its way: each end of the hand, then the middle.
+local function cue_check(name, tag)
+    local n = #G.hand.cards
+    local picks = {left = {1, 2}, right = {n - 1, n}, middle = {math.floor(n / 2), math.floor(n / 2) + 1}}
+    for _, where in ipairs({'left', 'middle', 'right'}) do
+        local cards = {}
+        for _, k in ipairs(picks[where]) do cards[#cards + 1] = G.hand.cards[k] end
+        pick(cards)
+        wait(0.5)
+        local cues = cue_nodes()
+        check(#cues == 2, name .. ': both cues are there')
+        for _, cue in ipairs(cues) do
+            local over = cue_overlap(cue)
+            check(over <= 0, string.format('%s: hand clear of the %s cue, %s picked (%.2f)', name, cue.config.hint, where, over))
+        end
+        shot(tag .. '_swipe_cue_' .. where)
+    end
+    G.hand:unhighlight_all()
+    wait(0.3)
+end
+
 wait_title()
 
 if not G.F_PORTRAIT then
@@ -62,6 +109,7 @@ for i, name in ipairs(PORTRAIT_LAYOUT_NAMES) do
         settle(1)
         bar_check(name)
         screen_check(tag .. '_swipe_hand')
+        cue_check(name, tag)
 
         if PORTRAIT_LAYOUTS[i] == 'one_thumb' then
             check_on_screen({id = 'thumb_menu_button'}, name .. ': Options stays in the bar')
