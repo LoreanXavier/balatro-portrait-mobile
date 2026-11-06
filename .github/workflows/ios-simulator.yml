@@ -17,7 +17,7 @@ on:
 jobs:
   inset-probe:
     name: ${{ matrix.device }}
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -38,16 +38,19 @@ jobs:
           mv InsetProbe InsetProbe.app/
           cp Info.plist InsetProbe.app/
 
+      # The image only comes with current models, so make the one under test.
       - name: Boot simulator
         run: |
-          xcrun simctl list devices available
-          xcrun simctl boot "${{ matrix.device }}"
-          xcrun simctl bootstatus "${{ matrix.device }}" -b
+          xcrun simctl list runtimes
+          udid=$(xcrun simctl create inset-probe "${{ matrix.device }}")
+          echo "SIMULATOR=$udid" >> "$GITHUB_ENV"
+          xcrun simctl boot "$udid"
+          xcrun simctl bootstatus "$udid" -b
 
       - name: Run probe
         run: |
-          xcrun simctl install "${{ matrix.device }}" tools/ios_inset_probe/InsetProbe.app
-          xcrun simctl launch --console-pty "${{ matrix.device }}" \
+          xcrun simctl install "$SIMULATOR" tools/ios_inset_probe/InsetProbe.app
+          xcrun simctl launch --console-pty "$SIMULATOR" \
             com.balatroportrait.insetprobe | tee probe_out.txt
           grep -m1 INSET_PROBE probe_out.txt
 
