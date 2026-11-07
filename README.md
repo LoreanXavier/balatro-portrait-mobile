@@ -481,3 +481,11 @@ The build tooling, documentation and portrait-mode changes are under the
 [MIT License](LICENSE). All rights to Balatro, including the game code and
 assets this project builds on, belong to LocalThunk / Playstack. See the scope
 note in [LICENSE](LICENSE).
+
+## AI Disclosure
+
+AI coding tools were used in developing and debugging this mod. My focus has been
+on how it plays on a phone: choosing the design of the layouts, testing on real
+phones, reproducing reported bugs and prioritizing fixes.
+
+The game's art, sounds and text come from the player's own copy of Balatro.
