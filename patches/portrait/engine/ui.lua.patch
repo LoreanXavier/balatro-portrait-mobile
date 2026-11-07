@@ -153,7 +153,7 @@
      --Then, calculate the correct width and height for each container
      self.UIRoot:set_wh()
      --Then, set all of the correct alignments for the ui elements
-@@ -313,15 +328,50 @@
+@@ -313,15 +328,57 @@
      self.T.w = self.UIRoot.T.w
      self.T.h = self.UIRoot.T.h
      G.REFRESH_FRAME_MAJOR_CACHE = (G.REFRESH_FRAME_MAJOR_CACHE or 0) + 1
@@ -190,6 +190,13 @@
 +    end
 +
 +    if dx ~= 0 or dy ~= 0 then
++        -- What a box holds follows its alignment, not T: moved on T alone, the box
++        -- fit the screen and its text stayed where it was, off the edge.
++        if self.role and self.role.role_type == 'Minor' and self.alignment and self.alignment.offset then
++            self.alignment.offset.x = self.alignment.offset.x + dx
++            self.alignment.offset.y = self.alignment.offset.y + dy
++            self:align_to_major()
++        end
 +        self.T.x = self.T.x + dx
 +        self.T.y = self.T.y + dy
 +        self.VT.x = self.T.x
@@ -204,7 +211,7 @@
  function UIBox:drag(offset)
      Moveable.drag(self,offset)
      Moveable.move(self.UIRoot, dt)
-@@ -364,7 +414,7 @@
+@@ -364,7 +421,7 @@
          self.states.drag.can = false
          self.static_rotation = true
      else
@@ -213,7 +220,7 @@
          self.T.y = _T.y
          self.T.w = _T.w
          self.T.h = _T.h
-@@ -373,7 +423,7 @@
+@@ -373,7 +430,7 @@
      if self.config.button_UIE then self.states.collide.can = true; self.states.hover.can = false; self.states.click.can = true end
      if self.config.button then self.states.collide.can = true; self.states.click.can = true end
  
@@ -222,7 +229,7 @@
          self.states.collide.can = true
      end
  
-@@ -395,7 +445,7 @@
+@@ -395,7 +452,7 @@
      end
  
      if self.config and self.config.ref_value and self.config.ref_table then
@@ -231,7 +238,7 @@
      end
  
      if self.UIT == G.UIT.T then self.static_rotation = true end
-@@ -409,7 +459,7 @@
+@@ -409,7 +466,7 @@
          if self.UIT == G.UIT.R then self:juice_up() end
          self.config.juice = false
      end
@@ -240,7 +247,7 @@
      if not self.config.colour then
          if self.UIT == G.UIT.ROOT then self.config.colour = G.C.UI.BACKGROUND_DARK end
          if self.UIT == G.UIT.T then self.config.colour = G.C.UI.TEXT_LIGHT end
-@@ -427,7 +477,7 @@
+@@ -427,7 +484,7 @@
          if self.UIT == G.UIT.R then self.config.outline_colour = G.C.UI.OUTLINE_LIGHT end
      end
  
@@ -249,7 +256,7 @@
          if self.config.focus_args.button then
              G.CONTROLLER:add_to_registry(self.config.button_UIE or self, self.config.focus_args.button)
          end
-@@ -436,7 +486,7 @@
+@@ -436,7 +493,7 @@
              G.CONTROLLER:snap_to{node = self}
          end
  
@@ -258,7 +265,7 @@
              local _par = self.parent
              while _par and _par:is(UIElement) do
                  if _par.config.focus_args and _par.config.focus_args.funnel_from then
-@@ -469,23 +519,23 @@
+@@ -469,23 +526,23 @@
          if v == self.UIT then UIT = ''..k end
      end
      local box_str = '\n'..(string.rep("  ", indent))..'| '..UIT..' | - ID:'..self.ID..' w/h:'..self.T.w..'/'..self.T.h
@@ -291,7 +298,7 @@
              box_str = box_str..v:print_topology(indent+1)
          end
      end
-@@ -517,7 +567,7 @@
+@@ -517,7 +574,7 @@
  end
  
  function UIElement:juice_up(amount, rot_amt)
@@ -300,7 +307,7 @@
          if self.config.object then self.config.object:juice_up(amount, rot_amt) end
      else
          Moveable.juice_up(self, amount, rot_amt)
-@@ -535,9 +585,9 @@
+@@ -535,9 +592,9 @@
  function UIElement:draw_children(layer)
      if self.states.visible then
          for k, v in pairs(self.children) do
@@ -312,7 +319,7 @@
                  if v.draw_self and v.config.draw_after then v:draw_self() else v:draw() end
              end
          end
-@@ -549,12 +599,12 @@
+@@ -549,12 +606,12 @@
      local padding = (self.config and self.config.padding) or G.UIT.padding
  
      local _max_w, _max_h = 0,0
@@ -327,7 +334,7 @@
                  local _cw, _ch = w:set_wh()
                  if _cw and _ch then
                      if _cw > _max_w then _max_w = _cw end
-@@ -577,7 +627,7 @@
+@@ -577,7 +634,7 @@
      self.role.offset.y = self.role.offset.y + y
      self.role.offset.x = self.role.offset.x + x
      for _, v in pairs(self.children) do
@@ -336,7 +343,7 @@
              v:align(x, y)
          end
      end
-@@ -590,16 +640,16 @@
+@@ -590,16 +647,16 @@
      --bottom is b
      --right is r
      for k, v in pairs(self.children) do
@@ -356,7 +363,7 @@
              end
              if string.find(self.config.align, "m") then
                  v:align(0.5*(self.T.w - self.content_dimensions.w),0)
-@@ -624,7 +674,7 @@
+@@ -624,7 +681,7 @@
          self.config.text = tostring(self.config.ref_table[self.config.ref_value])
          self.config.text_drawable:set(self.config.text)
          if not self.config.no_recalc and self.config.prev_value and string.len(self.config.prev_value) ~= string.len(self.config.text) then self.UIBox:recalculate() end
@@ -365,7 +372,7 @@
      end
  end
  
-@@ -661,7 +711,7 @@
+@@ -661,7 +718,7 @@
      end
  end
  function UIElement:draw_self()
@@ -374,7 +381,7 @@
          if self.config.force_focus then add_to_drawhash(self) end
          return
      end
-@@ -674,10 +724,10 @@
+@@ -674,10 +731,10 @@
      local parallax_dist = 1.5
      local button_being_pressed = false
  
@@ -387,7 +394,7 @@
          if self.config.button and ((self.last_clicked and self.last_clicked > G.TIMERS.REAL - 0.1) or ((self.config.button and (self.states.hover.is or self.states.drag.is))
              and G.CONTROLLER.is_cursor_down)) then
                  self.layered_parallax.x = self.layered_parallax.x - parallax_dist*self.shadow_parrallax.x/G.TILESIZE*(self.config.button_dist or 1)
-@@ -689,14 +739,20 @@
+@@ -689,14 +746,20 @@
          if self.config.button_UIE and not self.config.button_UIE.config.button then button_active = false end
      end
      if self.config.colour[4] > 0.01 then
@@ -410,7 +417,7 @@
                  if (self.config.shadow or (self.config.button_UIE and button_active)) and G.SETTINGS.GRAPHICS.shadows == 'On' then
                      love.graphics.setColor(0, 0, 0, 0.3*self.config.colour[4])
                      love.graphics.draw(
-@@ -713,6 +769,7 @@
+@@ -713,6 +776,7 @@
  
              prep_draw(self, 1)
              if self.config.vert then love.graphics.translate(0,self.VT.h); love.graphics.rotate(-math.pi/2) end
@@ -418,7 +425,7 @@
              if not button_active then
                  love.graphics.setColor(G.C.UI.TEXT_INACTIVE)
              else
-@@ -734,19 +791,19 @@
+@@ -734,19 +798,19 @@
                  love.graphics.scale(0.98)
                  if self.config.shadow_colour then
                      love.graphics.setColor(self.config.shadow_colour)
@@ -442,7 +449,7 @@
                  love.graphics.setColor(darken(self.config.colour, self.states.hover.is and 0.5 or 0.3, true))
                  self:draw_pixellated_rect('emboss', parallax_dist, self.config.emboss)
              end
-@@ -756,8 +813,8 @@
+@@ -756,8 +820,8 @@
              self.ARGS.button_colours[2] = (((collided_button.config.hover and collided_button.states.hover.is) or (collided_button.last_clicked and collided_button.last_clicked > G.TIMERS.REAL - 0.1)) and G.C.UI.HOVER or nil)
              for k, v in ipairs(self.ARGS.button_colours) do
                  love.graphics.setColor(v)
@@ -453,7 +460,7 @@
                          love.graphics.setColor(G.C.GREY)
                          self:draw_pixellated_rect('fill', parallax_dist)
                          love.graphics.setColor(v)
-@@ -777,7 +834,7 @@
+@@ -777,7 +841,7 @@
              love.graphics.pop()
          elseif self.UIT == G.UIT.O and self.config.object then
              --Draw the outline for highlighted objext
@@ -462,7 +469,7 @@
                  self.object_focus_timer = self.object_focus_timer or G.TIMERS.REAL
                  local lw = 50*math.max(0, self.object_focus_timer - G.TIMERS.REAL + 0.3)^2
                  prep_draw(self, 1)
-@@ -794,19 +851,19 @@
+@@ -794,19 +858,19 @@
              self.config.object:draw()
          end
      end
@@ -486,7 +493,7 @@
                  self:draw_pixellated_rect('line', parallax_dist)
              else
                  love.graphics.rectangle('line', 0,0, self.VT.w*G.TILESIZE, self.VT.h*G.TILESIZE)
-@@ -816,7 +873,7 @@
+@@ -816,7 +880,7 @@
      end
  
      --Draw the outline for highlighted buttons
@@ -495,7 +502,7 @@
          self.focus_timer = self.focus_timer or G.TIMERS.REAL
          local lw = 50*math.max(0, self.focus_timer - G.TIMERS.REAL + 0.3)^2
          prep_draw(self, 1)
-@@ -832,7 +889,7 @@
+@@ -832,7 +896,7 @@
      end
  
      --Draw the 'chosen triangle'
@@ -504,7 +511,7 @@
          prep_draw(self, 0.98)
          love.graphics.scale(1/(G.TILESIZE))
          if self.config.shadow and G.SETTINGS.GRAPHICS.shadows == 'On' then
-@@ -859,7 +916,7 @@
+@@ -859,7 +923,7 @@
          self.pixellated_rect.sw ~= self.shadow_parrallax.x or
          self.pixellated_rect.sh ~= self.shadow_parrallax.y or
          self.pixellated_rect.progress ~= (_progress or 1)
@@ -513,7 +520,7 @@
          self.pixellated_rect = {
              w = self.VT.w,
              h = self.VT.h,
-@@ -963,20 +1020,58 @@
+@@ -963,20 +1027,58 @@
  end
  
  function UIElement:click()
@@ -575,7 +582,7 @@
          G.NO_MOD_CURSOR_STACK = nil
  
          if self.config.choice then
-@@ -1011,15 +1106,16 @@
+@@ -1011,15 +1113,16 @@
          self.config.object = nil
      end
  

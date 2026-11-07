@@ -2,7 +2,7 @@ PORTRAIT_CONFIG = {
     -- Single source of truth for the mod version: build.py parses it from
     -- here, and the Zygisk packaging refuses to ship a module.prop that
     -- disagrees with it. Bump this, module.prop and the CHANGELOG together.
-    version = "1.0.4",
+    version = "1.0.5",
     scale_factor = 0.63,
     hud_top_space = 13,
     bottom_margin = 0.35,
@@ -265,7 +265,9 @@ function get_portrait_scale(w, h)
     elseif aspect > 1.5 then
         s = 0.70
     else
-        s = 0.80
+        -- A foldable opened is nearly square: at a tablet's size the room came out
+        -- too short, and the blinds and the shop ran off the bottom.
+        s = math.max(0.80, 1.15/aspect)
     end
     -- Swipe Only mode: no Play/Discard buttons, so scale the whole UI up to
     -- fill the freed space (smaller divisor = bigger UI). Reads the session-
@@ -971,7 +973,13 @@ end
 --portrait run.
 function portrait_shelf_floor()
     if not (G and G.F_PORTRAIT and G.jokers and G.jokers.T) then return nil end
-    return G.jokers.T.y + G.jokers.T.h + (PORTRAIT_CONFIG.panel_shelf_gap or 0.4)
+    local floor_y = G.jokers.T.y + G.jokers.T.h + (PORTRAIT_CONFIG.panel_shelf_gap or 0.45)
+    -- The count under the shelf is taller in some languages. Only a little: a count
+    -- box built this frame has not reached the shelf yet, and pushed the blinds off
+    -- a tablet.
+    local count = G.jokers.children and G.jokers.children.area_uibox
+    if count and count.T then floor_y = math.max(floor_y, math.min(count.T.y + count.T.h + 0.02, floor_y + 0.15)) end
+    return floor_y
 end
 
 --Layout styles, picked in Options > Settings > Game > Layout and applied on
@@ -1041,12 +1049,15 @@ function apply_portrait_tooltip_fit(config)
     return config
 end
 
+local fit_popup_width
+
 function prepare_portrait_popup_fit(box)
     if not (G and G.F_PORTRAIT and box) then return end
 
     if box.config then
         apply_portrait_tooltip_fit(box.config)
     end
+    fit_popup_width(box)
     if box.states then
         if box.states.collide then box.states.collide.can = false end
         if box.states.drag then box.states.drag.can = false end
@@ -1116,7 +1127,7 @@ end
 --from its columns. The tab bar stays a row.
 local function row_of_columns_width(node)
     local kids = node.children or {}
-    if node.UIT ~= G.UIT.R or #kids < 2 then return nil end
+    if node.UIT ~= G.UIT.R or #kids < 2 or node.config.tab_row then return nil end
     local padding = node.config.padding or G.UIT.padding
     local w = padding
     for _, c in ipairs(kids) do
@@ -1132,13 +1143,42 @@ local function stack_widest_row(box)
         local w = row_of_columns_width(node)
         if w and w > widest then row, widest = node, w end
     end)
-    if not row then return false end
+    if not row then return nil end
     for _, c in ipairs(row.children) do
         c.UIT = G.UIT.R
         c.config.align = c.config.align or 'cm'
     end
     recalculate_overlay(box)
-    return true
+    return row
+end
+
+--All the text in a box, down by f: the last resort for what no layout can fit.
+local function shrink_text(root, f)
+    each_overlay_node(root, function(node)
+        local obj = node.UIT == G.UIT.O and node.config.object
+        if node.UIT == G.UIT.T and node.config.scale then
+            node.config.scale = node.config.scale*f
+        elseif obj and obj.is and obj:is(DynaText) and obj.scale then
+            obj.scale = obj.scale*f
+            obj:update_text(true)
+            obj.T.w, obj.T.h = obj.config.W, obj.config.H
+            obj:align_letters()
+        end
+    end)
+end
+
+--A card's tooltip is as wide as its longest line, and in Russian or French some
+--are wider than a phone: the text ran off both edges, however the box was moved.
+fit_popup_width = function(box)
+    if box.portrait_width_fitted or not (box.UIRoot and box.T and G.ROOM and G.ROOM.T) then return end
+    box.portrait_width_fitted = true
+    local padding = (PORTRAIT_CONFIG and PORTRAIT_CONFIG.tooltip_screen_padding) or 0.12
+    local room = G.ROOM.T.w - 2*padding
+    for _ = 1, 3 do
+        if box.T.w <= room then return end
+        shrink_text(box.UIRoot, room/box.T.w)
+        box:recalculate()
+    end
 end
 
 local function fit_overlay_width(box)
@@ -1192,10 +1232,28 @@ local function fit_overlay_width(box)
 
     for node, w in pairs(minw) do node.config.minw = w end
     recalculate_overlay(box)
+    local stacked = {}
     for _ = 1, 4 do
-        if over() <= 0.01 or not stack_widest_row(box) then break end
+        local row = over() > 0.01 and stack_widest_row(box)
+        if not row then break end
+        stacked[#stacked+1] = row
+    end
+    --One under the other is no good when it runs off the top and the bottom: the
+    --Deck screen in Polish did. Such a menu stays side by side, with smaller text.
+    local panel_now = box.UIRoot.config.portrait_frame and box.UIRoot.children[1]
+    local height = love.graphics.getHeight()/(G.TILESCALE*G.TILESIZE) - 2*OVERLAY_MARGIN
+    if panel_now and panel_now.T.h > height then
+        for _, row in ipairs(stacked) do
+            for _, c in ipairs(row.children) do c.UIT = G.UIT.C end
+        end
+        recalculate_overlay(box)
     end
     squeeze()
+    for _ = 1, 3 do
+        if over() <= 0.01 then break end
+        shrink_text(box.UIRoot, avail/(avail + over()))
+        recalculate_overlay(box)
+    end
 end
 
 function portrait_fit_overlay(box)
@@ -1242,7 +1300,9 @@ function get_portrait_room_fit_delta(box, opts)
     local left = padding
     local top = padding
     local right = math.max(left, room_w - padding)
-    local bottom = math.max(top, room_h - padding)
+    -- The room starts below the top of the screen, so its height runs past the
+    -- bottom edge: a tooltip low down was cut off by that much.
+    local bottom = math.max(top, math.min(room_h, portrait_screen_bottom()) - padding)
     local min_x = box.T.x
     local min_y = box.T.y
     local max_x = box.T.x + box.T.w

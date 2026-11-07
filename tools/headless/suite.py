@@ -26,10 +26,10 @@ ZYGISK_PHONES = ["narrow", "phone", "tablet"]
 LANG_PHONES = ["narrow", "iphone-se", "tablet"]
 MOD_SETS = ["smods-26", "smods-1", "smods-26,talisman", "smods-26,jokerdisplay", "smods-26,amulet,cryptid"]
 ZYGISK_MOD_SETS = ["smods-26", "smods-26,talisman", "smods-26,amulet,cryptid"]
-LANG_SCENARIOS = ["layouts", "stress", "menus", "swipe"]
+LANG_SCENARIOS = ["layouts", "stress", "menus", "swipe", "blind_screen"]
 
 # Rough length of a run, to start the long ones first.
-WEIGHT = {"run": 10, "layouts": 7, "stress": 7, "mods": 6, "swipe": 5, "menus": 3, "smoke": 2, "haptics": 2, "crt": 1, "mod_folder": 1, "mod_menus": 1, "keyboard": 1}
+WEIGHT = {"run": 10, "layouts": 7, "stress": 7, "mods": 6, "swipe": 5, "menus": 3, "smoke": 2, "haptics": 2, "blind_screen": 3, "crt": 1, "mod_folder": 1, "mod_menus": 1, "keyboard": 1, "stats_crash": 1}
 
 
 def group(name, scenarios, devices, source="src", mods="", lang=""):
@@ -46,6 +46,22 @@ def full_matrix():
     groups += [group("mod_menus", ["mod_menus"], PHONES, mods="smods-26")]
     groups += [group("mod_menus-zygisk", ["mod_menus"], ZYGISK_PHONES, source="zygisk", mods="smods-26", lang="es_ES")]
     groups += [group("mod_menus-" + lang, ["mod_menus"], LANG_PHONES, mods="smods-26", lang=lang) for lang in LANGS]
+    return groups
+
+
+def hunt_matrix():
+    # The sweep of every screen for text out of place: read it with audit.py.
+    hunt = ["hunt_menus", "hunt_cards", "hunt_run"]
+    groups = [group("hunt", hunt, PHONES)]
+    groups += [group("hunt-" + lang, hunt, LANG_PHONES, lang=lang) for lang in LANGS]
+    groups += [group("hunt-smods-26", hunt, ["narrow", "tablet"], mods="smods-26")]
+    groups += [group("hunt-smods-26-" + lang, ["hunt_run"], ["narrow"], mods="smods-26", lang=lang) for lang in ("es_ES", "de", "ru")]
+    groups += [group("hunt-sizes", hunt, ["fold", "small", "long"])]
+    groups += [group("hunt-sizes-" + lang, hunt, ["fold", "small"], lang=lang) for lang in ("de", "ru", "ja")]
+    groups += [group("hunt-states", ["hunt_states", "monkey"], ["narrow", "phone", "iphone-se", "tablet", "fold", "small"])]
+    groups += [group("hunt-states-" + m, ["hunt_states", "monkey"], ["narrow"], mods=m) for m in ("smods-26", "smods-26,talisman")]
+    groups += [group("hunt-monkey-" + m, ["monkey"], ["phone", "tablet"], mods=m) for m in ("smods-26", "smods-26,amulet,cryptid")]
+    groups += [group("hunt-zygisk", ["hunt_states", "monkey"], ["phone"], source="zygisk")]
     return groups
 
 
@@ -83,11 +99,12 @@ def main():
     ap.add_argument("--timeout", type=int, default=400, help="seconds per run (default 400)")
     ap.add_argument("--realtime", action="store_true", help="follow the wall clock (much slower)")
     ap.add_argument("--balatro", metavar="PATH", help="Balatro.exe (default: Steam library guess or $BALATRO_EXE)")
+    ap.add_argument("--hunt", action="store_true", help="sweep every screen for text out of place, and keep the reports")
     ap.add_argument("--only", help="only the groups whose name contains this, e.g. zygisk, smods-1 or ru")
     ap.add_argument("--list", action="store_true", help="print the planned runs and stop")
     args = ap.parse_args()
 
-    groups = quick_matrix() if args.quick else full_matrix()
+    groups = hunt_matrix() if args.hunt else quick_matrix() if args.quick else full_matrix()
     if args.only:
         groups = [g for g in groups if args.only in g["name"]]
     jobs = plan(groups, args)
@@ -121,7 +138,7 @@ def main():
         a, g, device = job
         result = R.run_one(lovely if a.mods else plain, stages[g["source"]], scenarios[a.scenario],
                            device, R.DEVICES[device], a)
-        if result["ok"]:
+        if result["ok"] and not args.hunt:
             shutil.rmtree(os.path.join(R.OUT_DIR, a.out, device), ignore_errors=True)
         return result["ok"]
 

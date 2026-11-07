@@ -43,7 +43,7 @@ PROFILE_ROOT = os.path.join(os.environ.get("APPDATA", ""), "LOVE")
 
 # What --scenario all runs. boot is left out: smoke boots too, and boot is the
 # one that keeps the 12 s intro.
-SUITE = ["smoke", "menus", "run", "layouts", "stress", "swipe", "crt", "mod_folder", "keyboard", "haptics"]
+SUITE = ["smoke", "menus", "run", "layouts", "stress", "swipe", "crt", "mod_folder", "keyboard", "haptics", "blind_screen", "stats_crash"]
 
 # Logical window sizes (dp / points), the space the layout code works in, the
 # OS the game is told it runs on, and the iOS safe-area insets (top, bottom)
@@ -53,6 +53,9 @@ DEVICES = {
     "narrow":     ((360, 800), "Android", None),    # small Android, where most clipping shows
     "tall":       ((384, 854), "Android", None),    # 20:9 at a low density
     "tablet":     ((800, 1280), "Android", None),   # portrait tablet
+    "fold":       ((720, 880), "Android", None),    # a foldable opened, nearly square
+    "small":      ((320, 640), "Android", None),    # the smallest phones still in use
+    "long":       ((360, 840), "Android", None),    # 21:9
     "iphone-se":  ((375, 667), "iOS", (20, 0)),     # 16:9, home button
     "iphone15":   ((393, 852), "iOS", (59, 34)),    # Dynamic Island
     "iphone-max": ((430, 932), "iOS", (59, 34)),

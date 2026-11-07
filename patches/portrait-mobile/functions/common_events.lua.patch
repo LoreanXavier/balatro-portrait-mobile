@@ -1,6 +1,6 @@
 --- a/functions/common_events.lua
 +++ b/functions/common_events.lua
-@@ -1,24 +1,97 @@
+@@ -1,39 +1,124 @@
 -local platform = require("engine/platform")
 -
  function set_screen_positions()
@@ -68,7 +68,7 @@
 +            G.play.T.x = (room_w - G.play.T.w) / 2
 +            G.play.T.y = math.min(centered_play_y, hand_top_selecting - G.play.T.h - 0.5)
 +            G.play.T.y = math.max(G.play.T.y, jokers_bottom_limit)
-+
+ 
 +            if G.SETTINGS.play_main_hand == 2 then
 +                G.consumeables.T.x = G.jokers.T.x + G.jokers.T.w - G.consumeables.T.w
 +                G.consumeables.T.y = G.jokers.T.y - G.jokers.T.h - 0.6
@@ -110,10 +110,11 @@
 +            G.discard.T.x = G.jokers.T.x + G.jokers.T.w/2 + 0.3 + 15
 +            G.discard.T.y = 4.2
 +        end
- 
++
++        if G.F_PORTRAIT then portrait_realign_area_boxes() end
          G.hand:hard_set_VT()
          G.play:hard_set_VT()
-@@ -26,14 +99,25 @@
+         G.jokers:hard_set_VT()
          G.consumeables:hard_set_VT()
          G.deck:hard_set_VT()
          G.discard:hard_set_VT()
@@ -145,7 +146,7 @@
          end
  
          G.title_top:hard_set_VT()
-@@ -414,7 +498,6 @@
+@@ -414,7 +499,6 @@
              if not mute and drawn then
                  if from == G.deck or from == G.hand or from == G.play or from == G.jokers or from == G.consumeables or from == G.discard then
                      G.VIBRATION = G.VIBRATION + 0.6
@@ -153,7 +154,7 @@
                  end
                  play_sound('card1', 0.85 + percent*0.2/100, 0.6*(vol or 1))
              end
-@@ -569,8 +652,8 @@
+@@ -569,8 +653,8 @@
          end
          if config.sound and not config.modded then play_sound(config.sound, config.pitch or 1, config.volume or 1) end
          if config.modded then 
@@ -164,7 +165,7 @@
              G.GAME.blind:juice_up()
              G.E_MANAGER:add_event(Event({trigger = 'after', delay = 0.06*G.SETTINGS.GAMESPEED, blockable = false, blocking = false, func = function()
                  play_sound('tarot2', 0.76, 0.4);return true end}))
-@@ -754,26 +837,80 @@
+@@ -754,26 +838,80 @@
  end
  
  function set_main_menu_UI()
@@ -253,7 +254,7 @@
      
      G.CONTROLLER:snap_to{node = G.MAIN_MENU_UI:get_UIE_by_ID('main_menu_play')}
  end
-@@ -931,6 +1068,19 @@
+@@ -931,6 +1069,19 @@
      local width = G.round_eval.T.w - 0.51
      local num_dollars = config.dollars or 1
      local scale = 0.9
@@ -273,7 +274,7 @@
  
      if config.name ~= 'bottom' then
          if config.name ~= 'blind1' then
-@@ -942,6 +1092,7 @@
+@@ -942,6 +1093,7 @@
                              {n=G.UIT.O, config={object = DynaText({string = {'......................................'}, colours = {G.C.WHITE},shadow = true, float = true, y_offset = -30, scale = 0.45, spacing = 13.5, font = G.LANGUAGES['en-us'].font, pop_in = 0})}}
                          }}
                          G.round_eval:add_child(spacer,G.round_eval:get_UIE_by_ID(config.bonus and 'bonus_round_eval' or 'base_round_eval'))
@@ -281,15 +282,16 @@
                          return true
                      end
                  }))
-@@ -1014,6 +1165,7 @@
+@@ -1014,6 +1166,8 @@
                      G.GAME.blind:juice_up()
                  end
                  G.round_eval:add_child(full_row,G.round_eval:get_UIE_by_ID(config.bonus and 'bonus_round_eval' or 'base_round_eval'))
++                if G.F_PORTRAIT then portrait_line_up_eval_row(config.name, width) end
 +                center_round_eval()
                  play_sound('cancel', config.pitch or 1)
                  play_sound('highlight1',( 1.5*config.pitch) or 1, 0.2)
                  if config.card then config.card:juice_up(0.7, 0.46) end
-@@ -1031,6 +1183,7 @@
+@@ -1031,6 +1185,7 @@
                                  {n=G.UIT.O, config={object = DynaText({string = {localize('$')..num_dollars}, colours = {G.C.MONEY}, shadow = true, pop_in = 0, scale = 0.65, float = true})}}
                              }},
                              G.round_eval:get_UIE_by_ID('dollar_'..config.name))
@@ -297,7 +299,7 @@
  
                      play_sound('coin3', 0.9+0.2*math.random(), 0.7)
                      play_sound('coin6', 1.3, 0.8)
-@@ -1046,6 +1199,7 @@
+@@ -1046,6 +1201,7 @@
                              G.round_eval:add_child(
                                  {n=G.UIT.R, config={align = "cm", id = 'dollar_row_'..(dollar_row+1)..'_'..config.name}, nodes={}},
                                  G.round_eval:get_UIE_by_ID('dollar_'..config.name))
@@ -305,7 +307,7 @@
                                  dollar_row = dollar_row+1
                          end
  
-@@ -1057,7 +1211,7 @@
+@@ -1057,7 +1213,7 @@
                          end
  
                          G.round_eval:add_child(r,G.round_eval:get_UIE_by_ID('dollar_row_'..(dollar_row)..'_'..config.name))
@@ -314,7 +316,7 @@
                          G.VIBRATION = G.VIBRATION + 0.4
                          return true
                      end
-@@ -1069,17 +1223,24 @@
+@@ -1069,17 +1225,24 @@
          G.E_MANAGER:add_event(Event({
              trigger = 'before',delay = 0.5,
              func = function()
@@ -350,7 +352,7 @@
  
                  --local left_text = {n=G.UIT.R, config={id = 'cash_out_button', align = "cm", padding = 0.1, minw = 2, r = 0.15, colour = G.C.ORANGE, shadow = true, hover = true, one_press = true, button = 'cash_out', focus_args = {snap_to = true}}, nodes={
                  --    {n=G.UIT.T, config={text = localize('b_cash_out')..": ", scale = 1, colour = G.C.UI.TEXT_LIGHT, shadow = true}},
-@@ -1091,21 +1252,9 @@
+@@ -1091,21 +1254,9 @@
                  
                  play_sound('coin6', config.pitch or 1)
                  G.VIBRATION = G.VIBRATION + 1
@@ -372,7 +374,7 @@
      end
  end
  
-@@ -1164,21 +1313,18 @@
+@@ -1164,21 +1315,18 @@
      G.CURR_VIBRATION = math.min(1, G.CURR_VIBRATION + G.VIBRATION + G.JIGGLE_VIBRATION*0.2)
      G.VIBRATION = 0
      G.CURR_VIBRATION = (1-15*dt)*G.CURR_VIBRATION
@@ -400,7 +402,7 @@
      }))
  end
  
-@@ -1781,7 +1927,7 @@
+@@ -1781,7 +1929,7 @@
  
                  --|Other platforms
                  --|-------------------------------------------------------
@@ -409,7 +411,7 @@
                  --|-------------------------------------------------------
  
                  if achievement_set then notify_alert(achievement_name) end
-@@ -1791,14 +1937,7 @@
+@@ -1791,14 +1939,7 @@
          }), 'achievement')
  end
  
@@ -424,7 +426,7 @@
      _type = _type or 'achievement'
      G.E_MANAGER:add_event(Event({
        no_delete = true,
-@@ -1810,8 +1949,8 @@
+@@ -1810,8 +1951,8 @@
              G.achievement_notification = nil
          end
          G.achievement_notification = G.achievement_notification or UIBox{
@@ -435,7 +437,7 @@
          }
          return true
        end
-@@ -1823,7 +1962,7 @@
+@@ -1823,7 +1964,7 @@
          timer = 'UPTIME',
          delay = 0.1,
          func = function()
@@ -444,7 +446,7 @@
            return true
          end
      }), 'achievement')
-@@ -1846,7 +1985,7 @@
+@@ -1846,7 +1987,7 @@
        delay = 3,
        timer = 'UPTIME',
        func = function()
@@ -453,7 +455,7 @@
          return true
        end
      }), 'achievement')
-@@ -1881,7 +2020,7 @@
+@@ -1881,7 +2022,7 @@
          for key in string.gmatch(_UN .. "\n", "(.-)\n") do
              create_unlock_overlay(key)
          end
@@ -462,7 +464,7 @@
      end
  end
  
-@@ -1905,16 +2044,6 @@
+@@ -1905,16 +2046,6 @@
      end
  end
  
@@ -479,7 +481,7 @@
  function discover_card(card)
      if G.GAME.seeded or G.GAME.challenge then return end
      card = card or {}
-@@ -2122,9 +2251,6 @@
+@@ -2122,9 +2253,6 @@
      local area = area or G.jokers
      local center = G.P_CENTERS.b_red
          
@@ -489,7 +491,7 @@
  
      --should pool be skipped with a forced key
      if not forced_key and soulable and (not G.GAME.banned_keys['c_soul']) then
-@@ -2227,18 +2353,13 @@
+@@ -2227,18 +2355,13 @@
      ease_value(overlay_colour, 4, 0.6, nil, 'REAL', true,0.4)
      G.OVERLAY_TUTORIAL = G.OVERLAY_TUTORIAL or UIBox{
          definition = {n=G.UIT.ROOT, config = {align = "cm", padding = 32.05, r=0.1, colour = overlay_colour, emboss = 0.05}, nodes={
@@ -511,7 +513,7 @@
              major = G.ROOM_ATTACH,
              bond = 'Weak'
            }
-@@ -2248,7 +2369,23 @@
+@@ -2248,7 +2371,23 @@
      local row_dollars_chips = G.HUD:get_UIE_by_ID('row_dollars_chips')
      local align = args.align or "tm"
      local step = args.step or 1
@@ -536,7 +538,7 @@
      local pos = args.pos or {x=attach.major.T.x + attach.major.T.w/2, y=attach.major.T.y + attach.major.T.h/2}
      local button = args.button or {button = localize('b_next'), func = 'tut_next'}
      args.highlight = args.highlight or {}
-@@ -2258,7 +2395,6 @@
+@@ -2258,7 +2397,6 @@
          func = function()
              if G.OVERLAY_TUTORIAL and G.OVERLAY_TUTORIAL.step == step and
              not G.OVERLAY_TUTORIAL.step_complete then
@@ -544,7 +546,7 @@
                  G.CONTROLLER.interrupt.focus = true
                  G.OVERLAY_TUTORIAL.Jimbo = G.OVERLAY_TUTORIAL.Jimbo or Card_Character(pos)
                  if type(args.highlight) == 'function' then args.highlight = args.highlight() end
-@@ -2280,9 +2416,17 @@
+@@ -2280,9 +2418,17 @@
                        }
                      args.highlight[#args.highlight+1] = G.OVERLAY_TUTORIAL.content
                  end
@@ -564,7 +566,7 @@
                  G.OVERLAY_TUTORIAL.Jimbo:say_stuff(2*(#(G.localization.misc.tutorial[args.text_key] or {}))+1)
                  if args.snap_to then
                      G.E_MANAGER:add_event(Event({
-@@ -2385,10 +2529,8 @@
+@@ -2385,10 +2531,8 @@
  end
  
  function get_new_boss()
@@ -575,7 +577,7 @@
      if G.GAME.perscribed_bosses and G.GAME.perscribed_bosses[G.GAME.round_resets.ante] then 
          local ret_boss = G.GAME.perscribed_bosses[G.GAME.round_resets.ante] 
          G.GAME.perscribed_bosses[G.GAME.round_resets.ante] = nil
-@@ -2400,20 +2542,11 @@
+@@ -2400,20 +2544,11 @@
      local eligible_bosses = {}
      for k, v in pairs(G.P_BLINDS) do
          if not v.boss then

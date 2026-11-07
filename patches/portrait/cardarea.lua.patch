@@ -100,7 +100,12 @@
                      {n=G.UIT.B, config={w = 0.1,h=0.1}}
                  }} or nil
  
-@@ -313,6 +370,36 @@
+@@ -309,10 +366,41 @@
+                         }},
+                     config = { align = 'cm', offset = {x=0,y=0}, major = self, parent = self}
+                 }
++                self.children.area_uibox.portrait_made_at = {x = self.T.x, y = self.T.y, w = self.T.w}
+             end
          self.children.area_uibox:draw()
      end
  
@@ -137,7 +142,7 @@
      self:draw_boundingrect()
      add_to_drawhash(self)
  
-@@ -409,6 +496,15 @@
+@@ -409,6 +497,15 @@
  
  function CardArea:align_cards()
      if (self == G.hand or self == G.deck or self == G.discard or self == G.play) and G.view_deck and G.view_deck[1] and G.view_deck[1].cards then return end
@@ -153,7 +158,7 @@
      if self.config.type == 'deck' then
              local deck_height = (self.config.deck_height or 0.15)/52
              for k, card in ipairs(self.cards) do
-@@ -433,15 +529,31 @@
+@@ -433,15 +530,31 @@
              end
          end
      end
@@ -187,7 +192,7 @@
                  card.T.x = card.T.x + card.shadow_parrallax.x/30
              end
          end
-@@ -453,11 +565,12 @@
+@@ -453,11 +566,12 @@
              if not card.states.drag.is then 
                  card.T.r = 0.2*(-#self.cards/2 - 0.5 + k)/(#self.cards)+ (G.SETTINGS.reduced_motion and 0 or 1)*0.02*math.sin(2*G.TIMERS.REAL+card.T.x)
                  local max_cards = math.max(#self.cards, self.config.temp_limit)
@@ -201,7 +206,7 @@
                  card.T.x = card.T.x + card.shadow_parrallax.x/30
              end
          end
-@@ -499,7 +612,13 @@
+@@ -499,7 +613,13 @@
                  local max_cards = math.max(#self.cards, self.config.temp_limit)
                  card.T.x = self.T.x + (self.T.w-self.card_w)*((k-1)/math.max(max_cards-1, 1) - 0.5*(#self.cards-max_cards)/math.max(max_cards-1, 1)) + 0.5*(self.card_w - card.T.w) + (self.config.card_limit == 1 and 0.5*(self.T.w - card.T.w) or 0)
                  local highlight_height = G.HIGHLIGHT_H
@@ -216,7 +221,7 @@
                  card.T.y = self.T.y + self.T.h/2 - card.T.h/2 - highlight_height
                  card.T.x = card.T.x + card.shadow_parrallax.x/30
              end
-@@ -512,7 +631,21 @@
+@@ -512,7 +632,21 @@
                  card.T.r = 0.1*(-#self.cards/2 - 0.5 + k)/(#self.cards)+ (G.SETTINGS.reduced_motion and 0 or 1)*0.02*math.sin(2*G.TIMERS.REAL+card.T.x)
                  local max_cards = math.max(#self.cards, self.config.temp_limit)
                  card.T.x = self.T.x + (self.T.w-self.card_w)*((k-1)/math.max(max_cards-1, 1) - 0.5*(#self.cards-max_cards)/math.max(max_cards-1, 1)) + 0.5*(self.card_w - card.T.w)
@@ -239,7 +244,7 @@
                      card.T.x = self.T.x + (self.T.w-self.card_w)*((k-1)/(#self.cards-1)) + 0.5*(self.card_w - card.T.w)
                  elseif #self.cards > 1 and self ~= G.consumeables then
                      card.T.x = self.T.x + (self.T.w-self.card_w)*((k - 0.5)/(#self.cards)) + 0.5*(self.card_w - card.T.w)
-@@ -536,7 +669,14 @@
+@@ -536,7 +670,14 @@
                      card.T.x = self.T.x + self.T.w/2 - self.card_w/2 + 0.5*(self.card_w - card.T.w)
                  end
                  local highlight_height = G.HIGHLIGHT_H

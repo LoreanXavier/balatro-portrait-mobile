@@ -100,6 +100,8 @@ for i, name in ipairs(PORTRAIT_LAYOUT_NAMES) do
         wait_state('BLIND_SELECT', 30)
         wait_until(function() dismiss_popups() return find({button = 'select_blind'}) end, 20, 'blind choices')
         settle(1)
+        -- Measured where it stops, not on its way up from the bottom.
+        wait_until(function() return math.abs(G.blind_select.VT.y - G.blind_select.T.y) < 0.05 end, 10, 'blind panel in place')
         check_on_screen({button = 'select_blind'}, name .. ': Select')
         screen_check(tag .. '_swipe_blind')
         select_blind()

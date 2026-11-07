@@ -193,6 +193,147 @@ function portrait_label_lines(str, w, scale)
   return {table.concat(chars, '', 1, half) .. '-', table.concat(chars, '', half + 1)}
 end
 
+--A plain line broken at its spaces to fit room: some tooltips are one long line.
+function portrait_wrap_text(str, scale, room)
+  if text_w(str, scale) <= room then return {str} end
+  local lines, line = {}, ''
+  for word in str:gmatch('%S+') do
+    local longer = line == '' and word or line .. ' ' .. word
+    if line ~= '' and text_w(longer, scale) > room then
+      lines[#lines + 1] = line
+      line = word
+    else
+      line = longer
+    end
+  end
+  if line ~= '' then lines[#lines + 1] = line end
+  return lines
+end
+
+--The Credits are laid out for a desktop's width. Shrunk to a phone's, names came
+--out 3 px tall, so on a phone a page keeps its text size: its blocks go one under
+--the other, and a line too long for the page breaks at its spaces.
+function portrait_credits_w()
+  return G.ROOM.T.w - 1.4
+end
+
+--The size for a set of lines the Collabs page must not break: its legal text.
+function portrait_credits_line_scale(lines, scale)
+  local room = portrait_credits_w() - 2.4
+  local widest = 0
+  for _, line in ipairs(lines) do widest = math.max(widest, text_w(line, scale)) end
+  return widest > room and scale * room / widest or scale
+end
+
+local function wrapped_row(row, room)
+  local words, total = {}, 0
+  for _, node in ipairs(row.nodes) do
+    local c = node.config
+    if node.n ~= G.UIT.T or type(c.text) ~= 'string' then return nil end
+    total = total + text_w(c.text, c.scale)
+    for word in c.text:gmatch('%S+') do
+      words[#words + 1] = {text = word, scale = c.scale, colour = c.colour, shadow = c.shadow}
+    end
+  end
+  if total <= room or #words < 2 then return nil end
+
+  local lines, line, used = {}, {}, 0
+  for _, word in ipairs(words) do
+    local w = text_w(word.text .. ' ', word.scale)
+    if used + w > room and #line > 0 then
+      lines[#lines + 1] = line
+      line, used = {}, 0
+    end
+    line[#line + 1] = word
+    used = used + w
+  end
+  lines[#lines + 1] = line
+
+  local rows = {}
+  for _, words_in_line in ipairs(lines) do
+    local nodes = {}
+    for i, word in ipairs(words_in_line) do
+      nodes[i] = {n=G.UIT.T, config={text = word.text .. (i < #words_in_line and ' ' or ''), scale = word.scale, colour = word.colour, shadow = word.shadow}}
+    end
+    rows[#rows + 1] = {n=G.UIT.R, config={align = 'cm', padding = 0}, nodes = nodes}
+  end
+  return rows
+end
+
+--How wide a part of a page comes out, from its text.
+local function node_w(node)
+  local c = node.config or {}
+  if node.n == G.UIT.T then return type(c.text) == 'string' and text_w(c.text, c.scale) or 0 end
+  if node.n == G.UIT.B then return c.w or 0 end
+  local w = 0
+  for _, child in ipairs(node.nodes or {}) do
+    local cw = node_w(child)
+    w = node.n == G.UIT.C and math.max(w, cw) or w + cw
+  end
+  -- A row of rows is as wide as its widest.
+  if node.n == G.UIT.R and node.nodes and node.nodes[1] and node.nodes[1].n == G.UIT.R then
+    w = 0
+    for _, child in ipairs(node.nodes) do w = math.max(w, node_w(child)) end
+  end
+  return math.max(w + 2*(c.padding or 0), c.minw or 0)
+end
+
+--Columns side by side, too wide together, go in rows of as many as fit. They come
+--in twos, a column of names and a column of what each one did, and stay that way.
+local function regrouped_columns(row, room)
+  local total, columns = 0, 0
+  for _, child in ipairs(row.nodes) do
+    if child.n == G.UIT.C then columns = columns + 1 elseif child.n ~= G.UIT.B then return nil end
+    total = total + node_w(child)
+  end
+  if columns < 2 then return nil end
+  if total <= room or #row.nodes < 2 then return nil end
+  local kept = {}
+  for _, child in ipairs(row.nodes) do
+    if child.n == G.UIT.C then kept[#kept + 1] = child end
+  end
+  local rows, group, used = {}, {}, 0
+  for i = 1, #kept, 2 do
+    local w = node_w(kept[i]) + (kept[i + 1] and node_w(kept[i + 1]) or 0)
+    if used + w > room and #group > 0 then
+      rows[#rows + 1] = {n=G.UIT.R, config={align = 'tm', padding = 0.05}, nodes = group}
+      group, used = {}, 0
+    end
+    group[#group + 1] = kept[i]
+    group[#group + 1] = kept[i + 1]
+    used = used + w
+  end
+  rows[#rows + 1] = {n=G.UIT.R, config={align = 'tm', padding = 0.05}, nodes = group}
+  return rows
+end
+
+local function wrap_rows(node, room)
+  if type(node) ~= 'table' or not node.nodes then return end
+  if node.n == G.UIT.R and node.nodes[1] then
+    local rows = wrapped_row(node, room) or regrouped_columns(node, room)
+    if rows then
+      node.nodes = rows
+      if rows[1].nodes[1].n == G.UIT.T then return end
+    end
+  end
+  for _, child in ipairs(node.nodes) do wrap_rows(child, room) end
+end
+
+function portrait_credits_page(build)
+  return function(...)
+    local page = build(...)
+    local room = portrait_credits_w()
+    page.config.minw = room
+    page.config.padding = 0.12
+    for _, block in ipairs(page.nodes) do
+      if block.n == G.UIT.C then block.n = G.UIT.R end
+      block.config.minw = room - 0.3
+    end
+    wrap_rows(page, room - 0.8)
+    return page
+  end
+end
+
 --The label itself when it fits on one line, else its lines (create_toggle
 --takes either).
 function portrait_label_text(str, w, scale)
@@ -798,7 +939,22 @@ local function realign_area_boxes()
   for _, m in pairs(G.MOVEABLES) do
     if m.role and m.role.major and areas[m.role.major] and m.alignment then m.alignment.prev_type = nil end
   end
+  -- A box centres on its area by where its contents are, and those stay where it
+  -- last laid them out: each change of layout or hand took the deck's count and
+  -- the card slots further off, until they left the screen. An area draws a new
+  -- box when it has none.
+  for area in pairs(areas) do
+    local box = area.children and area.children.area_uibox
+    local made_at = box and box.portrait_made_at
+    if made_at and (math.abs(made_at.x - area.T.x) > 0.01 or math.abs(made_at.y - area.T.y) > 0.01
+        or math.abs(made_at.w - area.T.w) > 0.01) then
+      box:remove()
+      area.children.area_uibox = nil
+    end
+  end
 end
+
+portrait_realign_area_boxes = realign_area_boxes
 
 --Swipe Only's bigger cards need a taller hand area: the counter, the bar and
 --the score line hang off its edges. Runs from CardArea:move, so a new run or a
@@ -1012,10 +1168,29 @@ function portrait_blind_select_offset()
   local floor_y = portrait_shelf_floor()
   if floor_y then
     y = math.max(y, floor_y - (G.hand.T.y + G.hand.T.h) + box.T.h)
-    local fits = portrait_screen_bottom() - 0.05 - (G.hand.T.y + G.hand.T.h)
-    y = math.min(y, math.max(fits, floor_y - 0.3 - (G.hand.T.y + G.hand.T.h) + box.T.h))
+    local fits = portrait_screen_bottom() - (G.hand.T.y + G.hand.T.h)
+    y = math.min(y, math.max(fits, floor_y - 0.25 - (G.hand.T.y + G.hand.T.h) + box.T.h))
   end
   return y
+end
+
+--How tall a blind's column may be. Its background runs down off the bottom of the
+--screen, and at the desktop's 10 it began above Focus's joker count.
+function portrait_blind_choice_minh()
+  local floor_y = portrait_shelf_floor()
+  if not floor_y then return 10 end
+  return math.min(10, portrait_screen_bottom() - 0.3 - floor_y)
+end
+
+--A row of the round's end: as wide as the rest, however long its text, so its
+--dollars stay in line with theirs (a long hands or interest line pushed them out).
+function portrait_line_up_eval_row(name, width)
+  local dollars = G.round_eval:get_UIE_by_ID('dollar_' .. name)
+  local column = dollars and dollars.parent
+  local text = column and column.parent and column.parent.children[1]
+  if not text then return end
+  column.config.minw = math.max(width - text.T.w, 0.5)
+  G.round_eval:recalculate()
 end
 
 --Where the hand comes to rest in the current state.

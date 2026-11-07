@@ -203,7 +203,8 @@ end
 local function unit_px() return G.TILESCALE * G.TILESIZE end
 
 local function node_rect_px(node)
-    local T = node.VT or node.T
+    -- A UIBox is where its contents are drawn, which its own T can differ from.
+    local T = (node.UIRoot and node.UIRoot.VT) or node.VT or node.T
     local s = unit_px()
     return (T.x + G.ROOM.T.x) * s, (T.y + G.ROOM.T.y) * s, T.w * s, T.h * s
 end
@@ -232,8 +233,10 @@ local function each_ui_element(fn)
             for _, child in pairs(node.children) do walk(child) end
         end
     end
-    for _, box in pairs(G.I.UIBOX or {}) do
-        if box.states and box.states.visible then walk(box.UIRoot) end
+    for _, kind in ipairs({'UIBOX', 'POPUP', 'ALERT'}) do
+        for _, box in pairs(G.I[kind] or {}) do
+            if box.states and box.states.visible then walk(box.UIRoot) end
+        end
     end
 end
 
@@ -335,6 +338,7 @@ function api.warn(msg)
 end
 
 function api.shot(name)
+    api.text_audit(name)
     local done = false
     local file = string.format('%02d_%s.png', #report.shots + 1, name)
     love.graphics.captureScreenshot(function(img)
@@ -604,6 +608,230 @@ function api.panel_margin_check(tag)
     end
 end
 
+-- What the checks above cannot see: text that fits the screen but not its place.
+-- Every shot walks what is drawn, tooltips and alerts too, and notes text running
+-- out of its panel, across the edge of a panel it does not belong to, into other
+-- text, off the screen, or too small to read. Noted in the report, for
+-- tools/headless/audit.py to gather across runs; a note fails nothing by itself.
+report.audit = {}
+local audit_seen = {}
+local UI_TEXT_MIN_PX = 5.5
+
+-- A cut that keeps the report valid UTF-8.
+local function audit_cut(s)
+    local cut = s:sub(1, 40)
+    if #s > 40 then cut = cut:gsub('[\192-\255][\128-\191]*$', '') end
+    return cut
+end
+
+local function audit_note(kind, tag, text, detail)
+    local key = kind .. '|' .. text .. '|' .. (detail or '')
+    if audit_seen[key] or #report.audit >= 600 then return end
+    audit_seen[key] = true
+    report.audit[#report.audit + 1] = {kind = kind, tag = tag or '?', text = text, detail = detail or ''}
+end
+
+local function drawn_colour(c)
+    return type(c) == 'table' and (c[4] == nil or c[4] > 0.25)
+end
+
+local function depth_x(a, b) return math.min(a.x + a.w, b.x + b.w) - math.max(a.x, b.x) end
+local function depth_y(a, b) return math.min(a.y + a.h, b.y + b.h) - math.max(a.y, b.y) end
+
+local function inside(a, b, tol)
+    return a.x >= b.x - tol and a.y >= b.y - tol and a.x + a.w <= b.x + b.w + tol and a.y + a.h <= b.y + b.h + tol
+end
+
+local function audit_collect(box, kind, out, nested)
+    local function walk(node, chain)
+        if type(node) ~= 'table' or not node.T or not node.VT then return end
+        if node.states and node.states.visible == false then return end
+        local c = node.config or {}
+        local r = {x = node.VT.x, y = node.VT.y, w = node.VT.w, h = node.VT.h}
+        if node.UIT == G.UIT.T then
+            local s = c.text or (c.ref_table and c.ref_value and tostring(c.ref_table[c.ref_value] or '')) or ''
+            if type(s) == 'string' and s:find('%S') and r.w > 0.01 then
+                out.texts[#out.texts + 1] = {r = r, s = s, chain = chain, box = box, kind = kind}
+            end
+        elseif node.UIT == G.UIT.O and c.object then
+            local o = c.object
+            if o.UIRoot then
+                nested[o] = true
+                walk(o.UIRoot, chain)
+            elseif o.is and o:is(DynaText) and o.VT and o.states and o.states.visible ~= false then
+                local s = o.string
+                if type(s) == 'string' and s:find('%S') and (o.config.W or 0) > 0.01 then
+                    out.texts[#out.texts + 1] = {r = {x = o.VT.x, y = o.VT.y, w = o.config.W, h = o.config.H},
+                        s = s, chain = chain, box = box, kind = kind}
+                end
+            end
+        elseif node.UIT and drawn_colour(c.colour) and r.w > 0.05 and r.h > 0.05 then
+            local panel = {r = r, node = node, box = box, kind = kind}
+            out.panels[#out.panels + 1] = panel
+            local more = {}
+            for i = 1, #chain do more[i] = chain[i] end
+            more[#more + 1] = panel
+            chain = more
+        end
+        for _, child in pairs(node.children or {}) do
+            if type(child) == 'table' and not child.UIRoot then walk(child, chain) end
+        end
+    end
+    walk(box.UIRoot, {})
+end
+
+function api.text_audit(tag)
+    if not (G and G.I and G.ROOM and G.ROOM.T) then return end
+    local s = unit_px()
+    local screen = {x = -G.ROOM.T.x, y = -G.ROOM.T.y, w = love.graphics.getWidth() / s, h = love.graphics.getHeight() / s}
+    local out, nested = {texts = {}, panels = {}}, {}
+    local function usable(box)
+        return box.UIRoot and not box.REMOVED and box.states and box.states.visible and box.VT and box.T
+            and math.abs(box.VT.x - box.T.x) < 0.05 and math.abs(box.VT.y - box.T.y) < 0.05
+            and not (G.SETTINGS.paused and not box.created_on_pause)
+    end
+    -- Boxes held inside another box go with it, so that box's panels count.
+    local function mark(node)
+        if type(node) ~= 'table' then return end
+        local o = node.config and node.config.object
+        if o and o.UIRoot then nested[o] = true mark(o.UIRoot) end
+        for _, child in pairs(node.children or {}) do
+            if type(child) == 'table' and not child.UIRoot then mark(child) end
+        end
+    end
+    for _, kind in ipairs({'UIBOX', 'POPUP', 'ALERT'}) do
+        for _, box in pairs(G.I[kind] or {}) do if box.UIRoot then mark(box.UIRoot) end end
+    end
+    -- A tooltip's side panels are plain boxes hung off it, and float with it.
+    local function floats(box)
+        local p = box.config and box.config.parent
+        for _ = 1, 8 do
+            if not p then return false end
+            local owner = p.UIBox or p
+            if owner.config and owner.config.instance_type then return true end
+            p = owner.config and owner.config.parent or nil
+        end
+        return false
+    end
+    for _, kind in ipairs({'UIBOX', 'POPUP', 'ALERT'}) do
+        for _, box in pairs(G.I[kind] or {}) do
+            if usable(box) and not nested[box] then
+                audit_collect(box, floats(box) and 'POPUP' or kind, out, nested)
+            end
+        end
+    end
+
+    local function same_layer(a, b)
+        if a.kind == 'UIBOX' and b.kind == 'UIBOX' then return true end
+        return a.box == b.box
+    end
+    for i, t in ipairs(out.texts) do
+        local r = t.r
+        local label = audit_cut(t.s)
+        local off = math.max(screen.x - r.x, r.x + r.w - screen.x - screen.w, screen.y - r.y, r.y + r.h - screen.y - screen.h)
+        local parked = depth_x(r, screen) <= 0 or depth_y(r, screen) <= 0
+        if off > 0.02 and not parked then
+            audit_note('offscreen', tag, label, string.format('%.0fpx', off * s))
+        end
+        if r.h * s < UI_TEXT_MIN_PX then
+            audit_note('tiny', tag, label, string.format('%.1fpx', r.h * s))
+        end
+        local own = t.chain[#t.chain]
+        if own and not parked then
+            local p = own.r
+            local spill_x = math.max(p.x - r.x, r.x + r.w - p.x - p.w)
+            local spill_y = math.max(p.y - r.y, r.y + r.h - p.y - p.h)
+            if spill_x > 0.04 or spill_y > 0.12 then
+                audit_note('spill', tag, label, string.format('x %.2f y %.2f (text %.2f wide in %.2f)', spill_x, spill_y, r.w, p.w))
+            end
+        end
+        local mine = {}
+        for _, p in ipairs(t.chain) do mine[p] = true end
+        for _, q in ipairs(out.panels) do
+            if not parked and not mine[q] and same_layer(t, q) and depth_x(r, q.r) > 0.05 and depth_y(r, q.r) > 0.08
+                and not inside(r, q.r, 0.02) then
+                local c = q.node.config or {}
+                audit_note('cross', tag, label, tostring(c.id or c.button or (q.box.config and q.box.config.id) or 'panel')
+                    .. string.format(' %.2fx%.2f', q.r.w, q.r.h))
+            end
+        end
+        for j = i + 1, #out.texts do
+            local u = out.texts[j]
+            if not parked and same_layer(t, u) then
+                local dx, dy = depth_x(r, u.r), depth_y(r, u.r)
+                if dx > 0.05 and dy > 0.05 and dx * dy > 0.15 * math.min(r.w * r.h, u.r.w * u.r.h) then
+                    audit_note('collide', tag, label, audit_cut(u.s))
+                end
+            end
+        end
+    end
+end
+
+-- Opens every tooltip on the screen in turn and audits it: UI elements that carry
+-- one, sprites with a hover of their own (tags, blinds, stakes), and the cards
+-- in view. A deck's face-down pile is left out.
+function api.hover_all(tag)
+    local targets, seen = {}, {}
+    local function add(o)
+        if o and not seen[o] and not o.REMOVED then
+            seen[o] = true
+            targets[#targets + 1] = o
+        end
+    end
+    local function walk(node)
+        if type(node) ~= 'table' or not node.T then return end
+        if node.states and node.states.visible == false then return end
+        local c = node.config or {}
+        if c.tooltip or c.on_demand_tooltip or c.h_popup then add(node) end
+        local o = c.object
+        if o then
+            if o.UIRoot then
+                walk(o.UIRoot)
+            elseif o.cards then
+                for _, card in ipairs(o.cards) do add(card) end
+            elseif o.is and not o:is(DynaText) and o.states and o.states.visible ~= false
+                and (o.hover ~= Node.hover or (o.config and o.config.h_popup)) then
+                add(o)
+            end
+        end
+        for _, child in pairs(node.children or {}) do
+            if type(child) == 'table' and not child.UIRoot then walk(child) end
+        end
+    end
+    for _, box in pairs(G.I.UIBOX or {}) do
+        if box.UIRoot and not box.REMOVED and box.states and box.states.visible
+            and not (G.SETTINGS.paused and not box.created_on_pause) then
+            walk(box.UIRoot)
+        end
+    end
+    if not G.SETTINGS.paused then
+        for _, area in pairs(G.I.CARDAREA or {}) do
+            if area ~= G.deck and area ~= G.discard and area.cards and area.states and area.states.visible ~= false then
+                for _, card in ipairs(area.cards) do add(card) end
+            end
+        end
+    end
+    for _, o in ipairs(targets) do
+        if not o.REMOVED then
+            local ok, err = pcall(o.hover, o)
+            if not ok then
+                report.audit[#report.audit + 1] = {kind = 'error', tag = tag or '?', text = tostring(err):sub(1, 120), detail = 'hover'}
+            end
+            api.frames(3)
+            local before = #report.audit
+            api.text_audit(tag)
+            -- A picture of what the audit just noted, for a few of them.
+            if #report.audit > before and #report.shots < 120 then
+                local kind = report.audit[#report.audit].kind
+                if kind == 'offscreen' or kind == 'spill' then api.shot(tag .. '_note') end
+            end
+            pcall(o.stop_hover, o)
+        end
+    end
+    api.frames(2)
+    return #targets
+end
+
 -- One call per screen worth looking at: screenshot plus the layout checks.
 function api.screen_check(tag)
     api.shot(tag)
@@ -692,7 +920,7 @@ end
 
 -- Elements left moving after their box was removed: a leak, and a crash as
 -- soon as what the box hung off is gone too (a new run, the old hand).
-function api.leak_check(name)
+function api.leak_count()
     local n, sample = 0, nil
     for _, m in pairs(G.MOVEABLES) do
         local box = m.UIBox
@@ -710,6 +938,11 @@ function api.leak_check(name)
             end
         end
     end
+    return n, sample
+end
+
+function api.leak_check(name)
+    local n, sample = api.leak_count()
     api.check(n == 0, string.format('%s: nothing left moving from removed boxes (%d%s)', name, n, sample and (', e.g. ' .. sample) or ''))
 end
 

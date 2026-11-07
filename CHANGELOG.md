@@ -2,6 +2,37 @@
 
 All notable changes to Balatro Portrait Mobile.
 
+## [v1.0.5](https://github.com/LoreanXavier/balatro-portrait-mobile/releases/tag/v1.0.5) - 2026-11-08
+
+- **No more crash after Stats.** Opening the usage pages of Stats (jokers,
+  consumables, vouchers) and then starting a round crashed the game at the blind
+  select, in every language. The game's own code there writes a global that the
+  portrait blind panel kept its `type` function in.
+- **Fits in long languages** (#8):
+  - Focus: the joker count stays clear of the blinds.
+  - The round's end keeps its dollars in one column, however long a row's text.
+  - Classic: "Choose your next Blind" stays inside its panel.
+  - A tag's tooltip by the screen's edge: its box was moved onto the screen and
+    its text left where it was.
+  - A card tooltip wider than the phone (French, Russian, Japanese, Indonesian, and
+    German with Steamodded) shrinks to fit, and long one-line tooltips wrap.
+  - A final boss's reward row stays inside its column.
+- **The Deck screen stays on the screen.** In Polish, with a boss weakening cards,
+  its columns were put one under the other and ran off the top and the bottom.
+  A menu is now stacked only when it still fits, and gets smaller text otherwise.
+- **Credits laid out for a phone**: even buttons, a readable text size, long
+  lines wrapped and columns in pairs, instead of the desktop page shrunk to 3 px.
+- **Counts follow the cards when Layout or Left or Right Hand is changed in a
+  run.** The deck's count and the card slots stayed behind and drifted further off
+  with each change, until they left the screen.
+- **Foldables**: on a nearly square screen the blinds and the shop no longer run off
+  the bottom.
+- **Tooltips near the bottom of the screen** are no longer cut off, and on a
+  tablet's Game Over Jimbo talks from beside himself when there is no room below.
+- The headless runs audit the text of every screenshot, tooltips included, and
+  `suite.py --hunt` sweeps every screen, card, boss and tooltip in every language
+  and size, with random play on top. New `blind_screen` and `stats_crash` scenarios.
+
 ## [v1.0.4](https://github.com/LoreanXavier/balatro-portrait-mobile/releases/tag/v1.0.4) - 2026-11-07
 
 - **The menu comes down when the keyboard closes** (#4). Closing Gboard from the
