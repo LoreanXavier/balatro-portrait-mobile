@@ -85,7 +85,16 @@
          G.CURSOR.T.x = self.cursor_position.x/(G.TILESCALE*G.TILESIZE)
          G.CURSOR.T.y = self.cursor_position.y/(G.TILESCALE*G.TILESIZE)
          G.CURSOR.VT.x = G.CURSOR.T.x
-@@ -213,6 +226,10 @@
+@@ -195,6 +208,8 @@
+ --Called every game logic update frame
+ function Controller:update(dt)
+ 
++    portrait_watch_text_input()
++
+     --parse all locks and set
+     self.locked = false
+     if G.screenwipe then self.locks.wipe = true else self.locks.wipe = false end
+@@ -213,6 +228,10 @@
              blocking = false,
              blockable = false,
              no_delete = true,
@@ -96,7 +105,7 @@
              func = (function()
                  self.locks.frame = nil
                  return true
-@@ -236,7 +253,7 @@
+@@ -236,7 +255,7 @@
      self:set_HID_flags(self:update_axis(dt))
  
      --Set the cursor to be visible only if we are using a mouse or an axis to control the cursor position
@@ -105,7 +114,7 @@
          G.CURSOR.states.visible = true
      else
          G.CURSOR.states.visible = false
-@@ -317,13 +334,11 @@
+@@ -317,13 +336,11 @@
      self:get_cursor_collision(G.CURSOR.T)
      self:update_focus()
      self:set_cursor_hover()
@@ -119,7 +128,7 @@
      self.dragging.prev_target = self.dragging.target
      self.released_on.prev_target = self.released_on.target
      self.clicked.prev_target = self.clicked.target
-@@ -331,22 +346,6 @@
+@@ -331,22 +348,6 @@
  
      --Cursor is currently down
      if not self.cursor_down.handled then 
@@ -142,7 +151,7 @@
          if self.cursor_down.target.states.drag.can then
              self.cursor_down.target.states.drag.is = true
              self.cursor_down.target:set_offset(self.cursor_down.T, 'Click')
-@@ -360,256 +359,96 @@
+@@ -360,256 +361,96 @@
          --First, stop dragging
          if self.dragging.target then
              self.dragging.target:stop_drag()
@@ -464,7 +473,7 @@
      end
  end
  
-@@ -961,6 +800,7 @@
+@@ -961,6 +802,7 @@
      if self.text_input_hook then
          if key == "escape" then
              self.text_input_hook = nil
@@ -472,7 +481,7 @@
          elseif key == "capslock" then
              self.capslock = not self.capslock
          else
-@@ -1049,7 +889,8 @@
+@@ -1049,7 +891,8 @@
          end
          if key == 'l' then
              G:delete_run()
@@ -482,7 +491,7 @@
              G:start_run({savetext = G.SAVED_GAME})
          end
          if key == 'j' then
-@@ -1150,8 +991,8 @@
+@@ -1150,8 +993,8 @@
      end
  
      if not G.DRAW_HASH[1] or
@@ -493,7 +502,7 @@
          return 
      end
  
-@@ -1171,12 +1012,12 @@
+@@ -1171,12 +1014,12 @@
  function Controller:set_cursor_hover()
      self.cursor_hover.T = self.cursor_hover.T or {}
      self.cursor_hover.T.x, self.cursor_hover.T.y =G.CURSOR.T.x, G.CURSOR.T.y
@@ -508,7 +517,7 @@
  
      if self.HID.controller and self.focused.target and self.focused.target.states.hover.can then
          if (self.HID.dpad or self.HID.axis_cursor) and self.focused.target.states.collide.is then 
-@@ -1191,14 +1032,14 @@
+@@ -1191,14 +1034,14 @@
          end
      else
          for _, v in ipairs(self.collision_list) do
@@ -525,7 +534,7 @@
      if self.cursor_hover.target ~= self.cursor_hover.prev_target then self.cursor_hover.handled = false end 
  end
  
-@@ -1228,12 +1069,12 @@
+@@ -1228,12 +1071,12 @@
      if ((self.locked) and (not G.SETTINGS.paused or G.screenwipe)) or (self.locks.frame) then return end
  
      self.cursor_down.T = {x = x/(G.TILESCALE*G.TILESIZE), y = y/(G.TILESCALE*G.TILESIZE)}
@@ -540,7 +549,7 @@
  
      if press_node then 
          self.cursor_down.target = press_node.states.click.can and press_node or press_node:can_drag() or nil
-@@ -1251,12 +1092,12 @@
+@@ -1251,12 +1094,13 @@
      if ((self.locked) and (not G.SETTINGS.paused or G.screenwipe)) or (self.locks.frame) then return end
  
      self.cursor_up.T = {x = x/(G.TILESCALE*G.TILESIZE), y = y/(G.TILESCALE*G.TILESIZE)}
@@ -552,10 +561,11 @@
  
 -    self.cursor_up.target = self.hovering.target or self.focused.target or self.dragging.target
 +    self.cursor_up.target = self.hovering.target or self.focused.target
++    portrait_tap_ends_edit(self.cursor_up.target)
  
      if self.cursor_up.target == nil then 
          self.cursor_up.target = G.ROOM
-@@ -1266,7 +1107,6 @@
+@@ -1266,7 +1110,6 @@
  function Controller:is_node_focusable(node)
      local ret_val = false
      if node.T.y > G.ROOM.T.h + 3 then return false end
@@ -563,7 +573,7 @@
      if not node.REMOVED and not node.under_overlay and (node.states.hover.can and not self.dragging.target or self.dragging.target == node) and
          (not not node.created_on_pause) == (not not G.SETTINGS.paused) and
          (node.states.visible) and (not node.UIBox or node.UIBox.states.visible) then
-@@ -1280,7 +1120,7 @@
+@@ -1280,7 +1123,7 @@
                  ret_val = true
              end
              if node.config and node.config.force_focus then ret_val = true end
@@ -572,7 +582,7 @@
              if node.config and node.config.focus_args then
                  if node.config.focus_args.type == 'none' or node.config.focus_args.funnel_from then
                      ret_val = false
-@@ -1301,7 +1141,7 @@
+@@ -1301,7 +1144,7 @@
      self.focused.prev_target = self.focused.target
  
      --Only needed when using a controller, hovering covers all KBM scenarios
@@ -581,7 +591,7 @@
          if self.focused.target then self.focused.target.states.focus.is = false end 
          self.focused.target = nil
          return 
-@@ -1439,11 +1279,7 @@
+@@ -1439,11 +1282,7 @@
          else
              self.focused.target = G.ARGS.focus_list[1].node
          end
@@ -594,7 +604,7 @@
      else
          self.focused.target = nil
      end
-@@ -1492,7 +1328,10 @@
+@@ -1492,7 +1331,10 @@
          extern_button = true
      end
      if G.OVERLAY_MENU and not self.screen_keyboard and input_type == 'press' and G.OVERLAY_MENU:get_UIE_by_ID('cycle_shoulders') and (button == 'leftshoulder' or button == 'rightshoulder') then 
@@ -606,7 +616,7 @@
          extern_button = true
      end
      if focused and focused.config.focus_args then
-@@ -1560,10 +1399,7 @@
+@@ -1560,10 +1402,7 @@
              end
          end
      end
@@ -618,7 +628,7 @@
      return ret
  end
  
-@@ -1574,4 +1410,3 @@
+@@ -1574,4 +1413,3 @@
      --Set the cursor to be in the correct position for that target
      self:update_cursor()
  end

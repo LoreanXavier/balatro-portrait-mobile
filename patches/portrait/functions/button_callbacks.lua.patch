@@ -97,7 +97,7 @@
    INIT_COLLECTION_CARD_ALERTS()
  end
  
-@@ -826,11 +857,123 @@
+@@ -826,11 +857,132 @@
  G.FUNCS.change_play_discard_position = function(args)
    G.SETTINGS.play_button_pos = args.to_key
    if G.buttons then
@@ -113,6 +113,15 @@
 +--Portrait layout style (Classic / One-Thumb / Focus, see portrait_layout).
 +--Applied on the spot: the HUD, blind panel, button bar and card areas are
 +--rebuilt in the new style (portrait_rebuild_HUD), mid-run too.
++G.FUNCS.change_haptic_level = function(args)
++  local on = args.to_key > 1
++  G.SETTINGS.haptic_enabled = on
++  if on then G.SETTINGS.haptic_level = args.to_key end
++  on_haptic_setting_changed(on)
++  G:save_settings()
++  trigger_haptic('MEDIUM')
++end
++
 +G.FUNCS.change_portrait_layout = function(args)
 +  G.SETTINGS.portrait_layout = args.to_key
 +  G:save_settings()
@@ -226,7 +235,7 @@
    end
  end
  
-@@ -910,7 +1053,12 @@
+@@ -910,7 +1062,12 @@
  
    local OSkeyboard_e = e.parent.parent.parent
    if G.CONTROLLER.text_input_hook == e and G.CONTROLLER.HID.controller then
@@ -240,7 +249,7 @@
        OSkeyboard_e.children.controller_keyboard = UIBox{
          definition = create_keyboard_input{backspace_key = true, return_key = true, space_key = false},
          config = {
-@@ -953,9 +1101,29 @@
+@@ -953,9 +1110,29 @@
  G.FUNCS.select_text_input = function(e)
    G.CONTROLLER.text_input_hook = e.children[1].children[1]
  
@@ -270,7 +279,7 @@
  end
  
  --Handles all key inputs for the hooked text input.
-@@ -1003,6 +1171,23 @@
+@@ -1003,6 +1180,23 @@
    --Start by setting the cursor position to the correct location
    TRANSPOSE_TEXT_INPUT(0)
  
@@ -294,7 +303,7 @@
    if string.len(text.ref_table[text.ref_value]) > 0 and args.key == 'BACKSPACE' then --If not at start, remove preceding letter
      MODIFY_TEXT_INPUT{
        letter = '',
-@@ -1028,6 +1213,7 @@
+@@ -1028,6 +1222,7 @@
      hook_config.colour[3] = G.C.WHITE[3]
      ease_colour(hook_config.colour, temp_colour)
      G.CONTROLLER.text_input_hook = nil
@@ -302,7 +311,7 @@
    elseif args.key == 'LEFT' then --Move cursor position to the left
      TRANSPOSE_TEXT_INPUT(-1)
    elseif args.key == 'RIGHT' then --Move cursor position to the right
-@@ -1179,7 +1365,12 @@
+@@ -1179,7 +1374,12 @@
      vsync = G.SETTINGS.WINDOW.vsync,
      resizable = true,
      display = G.SETTINGS.WINDOW.selected_display,
@@ -316,7 +325,7 @@
      })
    G.SETTINGS.QUEUED_CHANGE = {}
    if _initial ~= true then
-@@ -1215,7 +1406,26 @@
+@@ -1215,7 +1415,26 @@
    if G.GAME.viewed_back.name ~= e.config.id then 
      --removes the UI from the previously selected back and adds the new one
  
@@ -343,7 +352,7 @@
      e.config.object = UIBox{
        definition = G.GAME.viewed_back:generate_UI(),
        config = {offset = {x=0,y=0}, align = 'cm', parent = e}
-@@ -1311,6 +1521,7 @@
+@@ -1311,6 +1530,7 @@
        config = {offset = {x=0,y=0}, parent = tab_contents, type = 'cm'}
      }
    tab_contents.UIBox:recalculate()
@@ -351,7 +360,7 @@
  end
  
  --||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-@@ -1351,6 +1562,7 @@
+@@ -1351,6 +1571,7 @@
  
    --Set the offset and align. The menu overlay can be initially offset in the y direction and this will ensure it slides to middle
    G.OVERLAY_MENU.alignment.offset.y = 0
@@ -359,7 +368,7 @@
    G.ROOM.jiggle = G.ROOM.jiggle + 1
    G.OVERLAY_MENU:align_to_major()
  end
-@@ -1818,7 +2030,28 @@
+@@ -1818,7 +2039,28 @@
      G.CLIPBOARD = G.GAME.pseudorandom.seed
    else
      love.system.setClipboardText(G.GAME.pseudorandom.seed)
@@ -389,7 +398,7 @@
  end
  
  G.FUNCS.start_setup_run = function(e)
-@@ -1854,18 +2087,32 @@
+@@ -1854,18 +2096,32 @@
      e.config.object:remove()
      e.config.object = nil
    elseif not e.config.object and G.run_setup_seed then
@@ -427,7 +436,7 @@
          }},
        }},
        config = {offset = {x=0,y=0}, parent = e, type = 'cm'}
-@@ -2023,6 +2270,12 @@
+@@ -2023,6 +2279,12 @@
        else
          _F.intensity = 0
        end
@@ -440,7 +449,7 @@
  
        _F.timer = _F.timer + G.real_dt*(1 + _F.intensity*0.2)
        if _F.intensity_vel < 0 then _F.intensity_vel = _F.intensity_vel*(1 - 10*G.real_dt) end
-@@ -2142,11 +2395,22 @@
+@@ -2142,11 +2404,22 @@
  
    G.FUNCS.show_infotip = function(e)
      if e.config.ref_table then 
@@ -464,7 +473,7 @@
        e.config.ref_table = nil
      end
    end
-@@ -2339,6 +2603,7 @@
+@@ -2339,6 +2612,7 @@
      G.SETTINGS.COMP.submission_name = true
      if G.MAIN_MENU_UI then G.MAIN_MENU_UI:remove() end
      if G.PROFILE_BUTTON then G.PROFILE_BUTTON:remove() end
@@ -472,7 +481,7 @@
      set_main_menu_UI()
      G:save_progress()
      G.FILE_HANDLER.force = true
-@@ -2348,6 +2613,7 @@
+@@ -2348,6 +2622,7 @@
      G.SETTINGS.COMP.name = ''
      if G.MAIN_MENU_UI then G.MAIN_MENU_UI:remove() end
      if G.PROFILE_BUTTON then G.PROFILE_BUTTON:remove() end
@@ -480,7 +489,7 @@
      set_main_menu_UI()
    end
  
-@@ -2629,10 +2895,14 @@
+@@ -2629,10 +2904,14 @@
    end
  
    G.FUNCS.blind_choice_handler = function(e)
@@ -498,7 +507,7 @@
  
            local _blind_choice = G.blind_select_opts[string.lower(e.config.id)]
            local _top_button = e.UIBox:get_UIE_by_ID('select_blind_button')
-@@ -2649,7 +2919,11 @@
+@@ -2649,7 +2928,11 @@
              _border.parent.config.outline_colour = G.C.UI.TRANSPARENT_DARK
              _border.config.outline_colour = _border.config.outline and _border.config.outline_colour or get_blind_main_colour(e.config.id)
              _border.config.outline = 1.5
@@ -511,7 +520,7 @@
              if _tag and _tag_container then 
                _tag_container.children[2].config.draw_after = false
                _tag_container.children[2].config.colour = G.C.BLACK
-@@ -2678,16 +2952,23 @@
+@@ -2678,16 +2961,23 @@
              _border.parent.config.outline_colour = nil
              _border.config.outline_colour = nil
              _border.config.outline = nil
@@ -542,7 +551,7 @@
                  _blind_choice.children.alert = UIBox{
                    definition = create_UIBox_card_alert({text_rot = -0.35, no_bg = true,text = localize('k_skipped_cap'), bump_amount = 1, scale = 0.9, maxw = 3.4}),
                    config = {
-@@ -2720,9 +3001,11 @@
+@@ -2720,9 +3010,11 @@
      if (e.states.hover.is or e.parent.states.hover.is) and (e.created_on_pause == G.SETTINGS.paused) and
        not e.parent.children.alert then
          local _sprite = e.config.ref_table:get_uibox_table()
@@ -555,7 +564,7 @@
            major = e.parent,
            instance_type = 'POPUP'},
        }
-@@ -2730,6 +3013,7 @@
+@@ -2730,6 +3022,7 @@
        play_sound('paper1', math.random()*0.1 + 0.55, 0.42)
        play_sound('tarot2', math.random()*0.1 + 0.55, 0.09)
        e.parent.children.alert.states.collide.can = false
@@ -563,7 +572,7 @@
      elseif e.parent.children.alert and
      ((not e.states.collide.is and not e.parent.states.collide.is) or (e.created_on_pause ~= G.SETTINGS.paused)) then
        e.parent.children.alert:remove()
-@@ -2807,35 +3091,65 @@
+@@ -2807,35 +3100,65 @@
          trigger = 'immediate',
          func = function()
            play_sound('other1')
@@ -636,7 +645,7 @@
          
          G.E_MANAGER:add_event(Event({blocking = false, trigger = 'after', delay = 0.5,func = function()
              G.CONTROLLER.locks.boss_reroll = nil
-@@ -3201,3 +3515,43 @@
+@@ -3201,3 +3524,43 @@
      end
    }))
  end

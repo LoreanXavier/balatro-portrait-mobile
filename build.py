@@ -105,6 +105,7 @@ else:
     JDK_SHA256 = "b535a58db80aeb5cc0d5e85ae6cb3f621d7f269ca1b36832f1aed3842cede4f4"
 
 APKTOOL_URL    = "https://github.com/iBotPeaches/Apktool/releases/download/v2.9.3/apktool_2.9.3.jar"
+SIGNING_KEYSTORE = "portrait-debug.keystore"
 SIGNER_URL     = "https://github.com/patrickfav/uber-apk-signer/releases/download/v1.3.0/uber-apk-signer-1.3.0.jar"
 PATCH_URL      = "https://github.com/blake502/balatro-apk-maker/releases/download/Additional-Tools-1.0/Balatro-APK-Patch.zip"
 # The LMM base APK is rebuilt upstream without version-pinned URLs, so it cannot
@@ -949,27 +950,35 @@ def _setup_termux_aapt2():
     return dest
 
 
-def _ensure_debug_keystore():
-    keystore = os.path.join(WORKDIR, "debug.keystore")
+def _ensure_debug_keystore(signer):
+    """The key inside uber-apk-signer, the one PC builds sign with. Android only
+    updates an app from the key it was installed with, and a key made here went
+    with this folder: the Termux command starts from a fresh clone, so every
+    rebuild came out as a conflicting package (#6). Converted to PKCS12, the format
+    Termux's apksigner has always been given here."""
+    keystore = os.path.join(WORKDIR, SIGNING_KEYSTORE)
     if os.path.exists(keystore):
         return keystore
     keytool = shutil.which("keytool")
     if not keytool:
         print("  ERROR: keytool not found after Java setup.")
         sys.exit(1)
+    embedded = os.path.join(WORKDIR, "uber-debug.keystore")
+    with zipfile.ZipFile(signer) as z, open(embedded, "wb") as f:
+        f.write(z.read("debug.keystore"))
     _run_checked([
         keytool,
-        "-genkeypair",
-        "-keystore", "debug.keystore",
-        "-storepass", "android",
-        "-keypass", "android",
-        "-alias", "androiddebugkey",
-        "-keyalg", "RSA",
-        "-keysize", "2048",
-        "-validity", "10000",
-        "-dname", "CN=Android Debug,O=Android,C=US",
+        "-importkeystore",
+        "-srckeystore", "uber-debug.keystore",
+        "-srcstorepass", "android",
+        "-srcalias", "androiddebugkey",
+        "-srckeypass", "android",
+        "-destkeystore", SIGNING_KEYSTORE,
+        "-deststoretype", "PKCS12",
+        "-deststorepass", "android",
+        "-destkeypass", "android",
         "-noprompt",
-    ], WORKDIR, "debug keystore creation")
+    ], WORKDIR, "debug keystore conversion")
     return keystore
 
 
@@ -979,7 +988,7 @@ def _sign_apk(signer):
         return
 
     apksigner = _ensure_termux_command("apksigner", "apksigner")
-    _ensure_debug_keystore()
+    _ensure_debug_keystore(signer)
 
     aligned = os.path.join(WORKDIR, "balatro-aligned.apk")
     signed = os.path.join(WORKDIR, "balatro-aligned-debugSigned.apk")
@@ -1005,7 +1014,7 @@ def _sign_apk(signer):
     _run_checked([
         apksigner,
         "sign",
-        "--ks", "debug.keystore",
+        "--ks", SIGNING_KEYSTORE,
         "--ks-pass", "pass:android",
         "--key-pass", "pass:android",
         "--out", "balatro-aligned-debugSigned.apk",
@@ -1089,6 +1098,107 @@ def _patch_sdl_portrait_orientation(apk_out):
         f.write(smali)
 
 
+def _patch_sdl_keyboard_watch(apk_out):
+    """Android tells an app nothing when its keyboard closes from the keyboard's
+    own chevron, so a small watcher reports it to SDL (#4)."""
+    app_dir = os.path.join(apk_out, "smali", "org", "libsdl", "app")
+    shutil.copy(os.path.join(os.path.dirname(os.path.abspath(__file__)), "src", "smali",
+                             "org", "libsdl", "app", "PortraitKeyboardWatch.smali"), app_dir)
+
+    smali_path = os.path.join(app_dir, "SDLActivity.smali")
+    with open(smali_path, "r", encoding="utf-8") as f:
+        smali = f.read()
+    signature = ".method protected onCreate(Landroid/os/Bundle;)V"
+    start = smali.find(signature)
+    if start == -1:
+        raise RuntimeError(f"{signature} not found in {smali_path}")
+    header = re.compile(r"(?m)^\s+\.(?:locals|registers)\s+\d+\s*$").search(smali, start)
+    if not header:
+        raise RuntimeError(f"{signature} has no .locals/.registers header in {smali_path}")
+    call = "\n    invoke-static {}, Lorg/libsdl/app/PortraitKeyboardWatch;->start()V\n"
+    smali = smali[:header.end()] + call + smali[header.end():]
+    with open(smali_path, "w", encoding="utf-8", newline="\n") as f:
+        f.write(smali)
+
+
+# The whole of GameActivity.vibrate, with the power portrait_vibrate puts in the
+# fraction of a millisecond: 1 to 255 of the motor's strength where the phone can
+# set it, the plain pulse otherwise (#7).
+VIBRATE_SMALI = """.method public static vibrate(D)V
+    .locals 6
+
+    sget-object v0, Lorg/love2d/android/GameActivity;->vibrator:Landroid/os/Vibrator;
+
+    if-eqz v0, :done
+
+    const-wide v1, 0x408f400000000000L    # 1000.0
+
+    mul-double v1, p0, v1
+
+    double-to-long v3, v1
+
+    long-to-double p0, v3
+
+    sub-double v1, v1, p0
+
+    const-wide p0, 0x406fe00000000000L    # 255.0
+
+    mul-double v1, v1, p0
+
+    double-to-int v1, v1
+
+    if-lez v1, :plain
+
+    const-wide/16 p0, 0x0
+
+    cmp-long v2, v3, p0
+
+    if-lez v2, :timed
+
+    goto :plain
+
+    :timed
+    sget v2, Landroid/os/Build$VERSION;->SDK_INT:I
+
+    const/16 v5, 0x1a
+
+    if-lt v2, v5, :plain
+
+    invoke-virtual {v0}, Landroid/os/Vibrator;->hasAmplitudeControl()Z
+
+    move-result v2
+
+    if-eqz v2, :plain
+
+    invoke-static {v3, v4, v1}, Landroid/os/VibrationEffect;->createOneShot(JI)Landroid/os/VibrationEffect;
+
+    move-result-object v1
+
+    invoke-virtual {v0, v1}, Landroid/os/Vibrator;->vibrate(Landroid/os/VibrationEffect;)V
+
+    return-void
+
+    :plain
+    invoke-virtual {v0, v3, v4}, Landroid/os/Vibrator;->vibrate(J)V
+
+    :done
+    return-void
+.end method"""
+
+
+def _patch_love_vibrate(apk_out):
+    smali_path = os.path.join(apk_out, "smali", "org", "love2d", "android", "GameActivity.smali")
+    with open(smali_path, "r", encoding="utf-8") as f:
+        smali = f.read()
+    start = smali.find(".method public static vibrate(D)V")
+    if start == -1:
+        raise RuntimeError(f"vibrate(D)V not found in {smali_path}")
+    end = smali.index(".end method", start) + len(".end method")
+    smali = smali[:start] + VIBRATE_SMALI + smali[end:]
+    with open(smali_path, "w", encoding="utf-8", newline="\n") as f:
+        f.write(smali)
+
+
 def build_apk(profiler=None):
     """Download tools, package, and sign the always-Lovely Android APK."""
     game_love_src = os.path.abspath("Game.love")
@@ -1151,6 +1261,10 @@ def build_apk(profiler=None):
 
         _patch_sdl_portrait_orientation(apk_out)
         print("  [Lovely] SDL orientation patched.")
+
+        _patch_sdl_keyboard_watch(apk_out)
+        _patch_love_vibrate(apk_out)
+        print("  [Lovely] Keyboard watch and haptic power patched.")
 
         # Icons
         for density in ["hdpi","mdpi","xhdpi","xxhdpi","xxxhdpi"]:

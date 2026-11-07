@@ -68,6 +68,9 @@ jobs:
           python tests/patches_test.py
           python tools/patches.py lint
 
+      - name: Signing key
+        run: python tests/signing_test.py
+
       - name: Smoke-test Game.love packaging
         run: |
           # No game files in CI (copyrighted): packaging our own files is

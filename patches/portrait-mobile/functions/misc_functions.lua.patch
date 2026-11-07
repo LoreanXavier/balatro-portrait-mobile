@@ -1,6 +1,6 @@
 --- a/functions/misc_functions.lua
 +++ b/functions/misc_functions.lua
-@@ -60,6 +60,99 @@
+@@ -60,6 +60,130 @@
    return res_option
  end
  
@@ -78,7 +78,38 @@
 +  if box.align_to_major then box:align_to_major() end
 +end
 +
++-- The keyboard can go away without a key the game sees: the chevron under Gboard,
++-- a back swipe. SDL stops text input when it does, and the edit ends as Enter ends
++-- it, or the menu stays lifted over nothing (#4).
++local text_input_asked = false
++
++-- Every frame. A mod can end the edit on its own too: Cryptid has its own
++-- text_input_key, which lets go of the field and leaves the rest to nobody.
++function portrait_watch_text_input()
++  if not text_input_asked then return end
++  if not G.CONTROLLER.text_input_hook then
++    set_mobile_text_input(false)
++  elseif love.keyboard.hasTextInput and not love.keyboard.hasTextInput() then
++    G.FUNCS.text_input_key({key = 'return'})
++  end
++end
++
++-- A tap beside the field ends the edit too, for a keyboard that closed without
++-- word. The field itself is left alone: that tap moves the cursor or reopens it.
++function portrait_tap_ends_edit(target)
++  local hook = G.CONTROLLER.text_input_hook
++  if not (hook and uses_system_keyboard()) then return end
++  local node = hook
++  while node do
++    if node == target then return end
++    if node.config and node.config.button == 'select_text_input' then break end
++    node = node.parent
++  end
++  G.FUNCS.text_input_key({key = 'return'})
++end
++
 +function set_mobile_text_input(enabled)
++  text_input_asked = enabled and true or false
 +  if uses_system_keyboard() then
 +    if enabled then portrait_lift_for_keyboard() else portrait_drop_after_keyboard() end
 +  end
@@ -100,7 +131,7 @@
  function timer_checkpoint(label, type, reset)
    G.PREV_GARB = G.PREV_GARB or 0
    if not G.F_ENABLE_PERF_OVERLAY then return end
-@@ -103,27 +196,24 @@
+@@ -103,27 +227,24 @@
  end
  
  function boot_timer(_label, _next, progress)
@@ -146,31 +177,31 @@
  
    G.ARGS.bt = G.ARGS.bt or love.timer.getTime()
    G.ARGS.bt = love.timer.getTime()
-@@ -697,6 +787,23 @@
+@@ -697,6 +818,23 @@
  
  function play_sound(sound_code, per, vol)
    if G.F_MUTE then return end
 +  
 +  if love and love.system and love.system.getOS and love.system.getOS() == 'Android' and love.system.vibrate and haptics_enabled() then
 +    if sound_code == 'button1' or sound_code == 'button2' or sound_code == 'paper1' then
-+      pcall(function() love.system.vibrate(0.01) end)
++      portrait_vibrate(0.01)
 +    elseif sound_code == 'card1' or sound_code == 'cardSlide1' or sound_code == 'cardSlide2' then
-+      pcall(function() love.system.vibrate(0.012) end)
++      portrait_vibrate(0.012)
 +    elseif sound_code == 'cardFan2' then
-+      pcall(function() love.system.vibrate(0.018) end)
++      portrait_vibrate(0.018)
 +    elseif sound_code == 'coin1' or sound_code == 'coin2' or sound_code == 'chips1' or sound_code == 'chips2' then
-+      pcall(function() love.system.vibrate(0.02) end)
++      portrait_vibrate(0.02)
 +    elseif sound_code == 'tarot2' or sound_code == 'timpani' or sound_code == 'whoosh1' or sound_code == 'tarot1' or sound_code == 'tarotinfo' then
-+      pcall(function() love.system.vibrate(0.03) end)
++      portrait_vibrate(0.03)
 +    elseif sound_code == 'cancel' or sound_code == 'error' then
-+      pcall(function() love.system.vibrate(0.04) end)
++      portrait_vibrate(0.04)
 +    end
 +  end
 +
    if sound_code and G.SETTINGS.SOUND.volume > 0.001 then
      G.ARGS.play_sound = G.ARGS.play_sound or {}
      G.ARGS.play_sound.type = 'sound'
-@@ -934,6 +1041,7 @@
+@@ -934,6 +1072,7 @@
    elseif G.GAME.modifiers.scaling == 2 then 
      local amounts = {
        300,  900, 2600,  8000,  20000,  36000,  60000,  100000
@@ -178,7 +209,7 @@
      }
      if ante < 1 then return 100 end
      if ante <= 8 then return amounts[ante] end
-@@ -944,6 +1052,7 @@
+@@ -944,6 +1083,7 @@
    elseif G.GAME.modifiers.scaling == 3 then 
      local amounts = {
        300,  1000, 3200,  9000,  25000,  60000,  110000,  200000
@@ -186,7 +217,7 @@
      }
      if ante < 1 then return 100 end
      if ante <= 8 then return amounts[ante] end
-@@ -1015,12 +1124,6 @@
+@@ -1015,12 +1155,6 @@
    end
  end
  
@@ -199,7 +230,7 @@
  function check_and_set_high_score(score, amt)
    if not amt or type(amt) ~= 'number' then return end
    if G.GAME.round_scores[score] and math.floor(amt) > G.GAME.round_scores[score].amt then
-@@ -1065,8 +1168,7 @@
+@@ -1065,8 +1199,7 @@
  end
  
  function get_joker_win_sticker(_center, index)
@@ -209,7 +240,7 @@
    G.PROFILES[G.SETTINGS.profile].joker_usage[_center.key].wins then 
      local _w = 0
      for k, v in pairs(G.PROFILES[G.SETTINGS.profile].joker_usage[_center.key].wins) do
-@@ -1264,18 +1366,6 @@
+@@ -1264,18 +1397,6 @@
    G:save_settings()
  end
  
@@ -228,7 +259,7 @@
  function set_profile_progress()
    G.PROGRESS = G.PROGRESS or {
      joker_stickers = {tally = 0, of = 0},
-@@ -1471,8 +1561,6 @@
+@@ -1471,8 +1592,6 @@
  
  function save_run()
    if G.F_NO_SAVING == true then return end
@@ -237,7 +268,7 @@
    local cardAreas = {}
    for k, v in pairs(G) do
      if (type(v) == "table") and v.is and v:is(CardArea) then 
-@@ -1499,7 +1587,6 @@
+@@ -1499,7 +1618,6 @@
      BACK = G.GAME.selected_back:save(),
      VERSION = G.VERSION
    }
@@ -245,7 +276,7 @@
    G.ARGS.save_run = G.culled_table
  
    G.FILE_HANDLER = G.FILE_HANDLER or {}
-@@ -1508,8 +1595,7 @@
+@@ -1508,8 +1626,7 @@
  end
  
  function remove_save()
@@ -255,7 +286,7 @@
    G.SAVED_GAME = nil
    G.FILE_HANDLER.run = nil
  end
-@@ -1539,7 +1625,7 @@
+@@ -1539,7 +1656,7 @@
      legendary = G.C.RARITY[4],
      enhanced = G.C.SECONDARY_SET.Enhanced
    }
@@ -264,7 +295,7 @@
  end
  
  function init_localization()
-@@ -1607,6 +1693,45 @@
+@@ -1607,6 +1724,45 @@
    end
  end
  
@@ -310,7 +341,7 @@
  function card_from_control(control)
    G.playing_card = (G.playing_card and G.playing_card + 1) or 1
    local _card = Card(G.deck.T.x, G.deck.T.y, G.CARD_W, G.CARD_H, G.P_CARDS[control.s..'_'..control.r], G.P_CENTERS[control.e or 'c_base'], {playing_card = G.playing_card})
-@@ -1744,7 +1869,8 @@
+@@ -1744,7 +1900,8 @@
            assembled_string = assembled_string..(type(subpart) == 'string' and subpart or args.vars[tonumber(subpart[1])] or 'ERROR')
          end
          local desc_scale = G.LANG.font.DESCSCALE
@@ -320,7 +351,7 @@
          if args.type == 'name' then
            final_line[#final_line+1] = {n=G.UIT.O, config={
              object = DynaText({string = {assembled_string},
-@@ -1859,6 +1985,9 @@
+@@ -1859,6 +2016,9 @@
      reroll_cost = 5,
      joker_slots = 5,
      ante_scaling = 1,
@@ -330,7 +361,7 @@
      consumable_slots = 2,
      no_faces = false,
      erratic_suits_and_ranks = false,
-@@ -1873,11 +2002,6 @@
+@@ -1873,11 +2033,6 @@
    end
  end
  
@@ -342,7 +373,7 @@
  --SOUND
  function PLAY_SOUND(args)
    args.per = args.per or 1
-@@ -1894,9 +2018,6 @@
+@@ -1894,9 +2049,6 @@
    s.created_on_state = args.state
    s.sfx_handled = 0
    s.transition_timer = 0
@@ -352,7 +383,7 @@
    SET_SFX(s, args)
    love.audio.play(s.sound)
    return s
-@@ -1913,7 +2034,6 @@
+@@ -1913,7 +2065,6 @@
  end
  
  function SET_SFX(s, args)
@@ -360,7 +391,7 @@
    if string.find(s.sound_code,'music') then 
        if s.sound_code == args.desired_track then
            s.current_volume = s.current_volume or 1
-@@ -1953,7 +2073,7 @@
+@@ -1953,7 +2104,7 @@
    for k, v in pairs(SOURCES) do
      local i=1
      while i <= #v do
@@ -369,7 +400,7 @@
              table.remove(v, i)
          else
              i = i + 1
-@@ -2014,314 +2134,3 @@
+@@ -2014,314 +2165,3 @@
        end
    end
  end

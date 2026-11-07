@@ -150,6 +150,11 @@ locally built APK.
 
 ### App already installed / signature conflict
 
-Uninstall the old `com.unofficial.balatro` build, then install the new APK.
-Your official Play Store Balatro is a different package and does not need to be
-removed.
+From 1.0.4 every build signs with the same key, on Termux and on a PC, so a new
+APK installs over the last one and the save stays.
+
+A build made on Termux before 1.0.4 has a key of its own, and Android will not let
+any other key update it. That leaves one uninstall for the move to 1.0.4: copy
+your save out first ([docs/SAVE_TRANSFER.md](SAVE_TRANSFER.md#before-you-uninstall)),
+uninstall `com.unofficial.balatro`, install the new APK, copy the save back. Your
+official Play Store Balatro is a different package and does not need to be removed.

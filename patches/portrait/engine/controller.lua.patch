@@ -48,7 +48,16 @@
          G.CURSOR.T.x = self.cursor_position.x/(G.TILESCALE*G.TILESIZE)
          G.CURSOR.T.y = self.cursor_position.y/(G.TILESCALE*G.TILESIZE)
          G.CURSOR.VT.x = G.CURSOR.T.x
-@@ -203,6 +226,10 @@
+@@ -185,6 +208,8 @@
+ --Called every game logic update frame
+ function Controller:update(dt)
+ 
++    portrait_watch_text_input()
++
+     --parse all locks and set
+     self.locked = false
+     if G.screenwipe then self.locks.wipe = true else self.locks.wipe = false end
+@@ -203,6 +228,10 @@
              blocking = false,
              blockable = false,
              no_delete = true,
@@ -59,7 +68,7 @@
              func = (function()
                  self.locks.frame = nil
                  return true
-@@ -773,6 +800,7 @@
+@@ -773,6 +802,7 @@
      if self.text_input_hook then
          if key == "escape" then
              self.text_input_hook = nil
@@ -67,7 +76,7 @@
          elseif key == "capslock" then
              self.capslock = not self.capslock
          else
-@@ -963,8 +991,8 @@
+@@ -963,8 +993,8 @@
      end
  
      if not G.DRAW_HASH[1] or
@@ -78,7 +87,15 @@
          return 
      end
  
-@@ -1300,7 +1328,10 @@
+@@ -1070,6 +1100,7 @@
+     self.is_cursor_down = false
+ 
+     self.cursor_up.target = self.hovering.target or self.focused.target
++    portrait_tap_ends_edit(self.cursor_up.target)
+ 
+     if self.cursor_up.target == nil then 
+         self.cursor_up.target = G.ROOM
+@@ -1300,7 +1331,10 @@
          extern_button = true
      end
      if G.OVERLAY_MENU and not self.screen_keyboard and input_type == 'press' and G.OVERLAY_MENU:get_UIE_by_ID('cycle_shoulders') and (button == 'leftshoulder' or button == 'rightshoulder') then 
@@ -90,7 +107,7 @@
          extern_button = true
      end
      if focused and focused.config.focus_args then
-@@ -1379,4 +1410,3 @@
+@@ -1379,4 +1413,3 @@
      --Set the cursor to be in the correct position for that target
      self:update_cursor()
  end

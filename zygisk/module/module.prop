@@ -1,7 +1,7 @@
 id=balatro_portrait
 name=Balatro Portrait (Zygisk)
-version=1.0.3
-versionCode=1003
+version=1.0.4
+versionCode=1004
 author=LoreanXavier
 description=Experimental portrait mode and Lovely/Steamodded mods for the official Google Play Balatro. Requires root + Zygisk. No game assets are redistributed.
 updateJson=https://raw.githubusercontent.com/LoreanXavier/balatro-portrait-mobile/main/zygisk/update.json

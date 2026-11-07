@@ -29,7 +29,7 @@ ZYGISK_MOD_SETS = ["smods-26", "smods-26,talisman", "smods-26,amulet,cryptid"]
 LANG_SCENARIOS = ["layouts", "stress", "menus", "swipe"]
 
 # Rough length of a run, to start the long ones first.
-WEIGHT = {"run": 10, "layouts": 7, "stress": 7, "mods": 6, "swipe": 5, "menus": 3, "smoke": 2, "crt": 1, "mod_folder": 1, "mod_menus": 1}
+WEIGHT = {"run": 10, "layouts": 7, "stress": 7, "mods": 6, "swipe": 5, "menus": 3, "smoke": 2, "haptics": 2, "crt": 1, "mod_folder": 1, "mod_menus": 1, "keyboard": 1}
 
 
 def group(name, scenarios, devices, source="src", mods="", lang=""):

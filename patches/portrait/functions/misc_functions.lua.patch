@@ -1,6 +1,6 @@
 --- a/functions/misc_functions.lua
 +++ b/functions/misc_functions.lua
-@@ -60,6 +60,99 @@
+@@ -60,6 +60,130 @@
    return res_option
  end
  
@@ -78,7 +78,38 @@
 +  if box.align_to_major then box:align_to_major() end
 +end
 +
++-- The keyboard can go away without a key the game sees: the chevron under Gboard,
++-- a back swipe. SDL stops text input when it does, and the edit ends as Enter ends
++-- it, or the menu stays lifted over nothing (#4).
++local text_input_asked = false
++
++-- Every frame. A mod can end the edit on its own too: Cryptid has its own
++-- text_input_key, which lets go of the field and leaves the rest to nobody.
++function portrait_watch_text_input()
++  if not text_input_asked then return end
++  if not G.CONTROLLER.text_input_hook then
++    set_mobile_text_input(false)
++  elseif love.keyboard.hasTextInput and not love.keyboard.hasTextInput() then
++    G.FUNCS.text_input_key({key = 'return'})
++  end
++end
++
++-- A tap beside the field ends the edit too, for a keyboard that closed without
++-- word. The field itself is left alone: that tap moves the cursor or reopens it.
++function portrait_tap_ends_edit(target)
++  local hook = G.CONTROLLER.text_input_hook
++  if not (hook and uses_system_keyboard()) then return end
++  local node = hook
++  while node do
++    if node == target then return end
++    if node.config and node.config.button == 'select_text_input' then break end
++    node = node.parent
++  end
++  G.FUNCS.text_input_key({key = 'return'})
++end
++
 +function set_mobile_text_input(enabled)
++  text_input_asked = enabled and true or false
 +  if uses_system_keyboard() then
 +    if enabled then portrait_lift_for_keyboard() else portrait_drop_after_keyboard() end
 +  end
@@ -100,31 +131,31 @@
  function timer_checkpoint(label, type, reset)
    G.PREV_GARB = G.PREV_GARB or 0
    if not G.F_ENABLE_PERF_OVERLAY then return end
-@@ -694,6 +787,23 @@
+@@ -694,6 +818,23 @@
  
  function play_sound(sound_code, per, vol)
    if G.F_MUTE then return end
 +  
 +  if love and love.system and love.system.getOS and love.system.getOS() == 'Android' and love.system.vibrate and haptics_enabled() then
 +    if sound_code == 'button1' or sound_code == 'button2' or sound_code == 'paper1' then
-+      pcall(function() love.system.vibrate(0.01) end)
++      portrait_vibrate(0.01)
 +    elseif sound_code == 'card1' or sound_code == 'cardSlide1' or sound_code == 'cardSlide2' then
-+      pcall(function() love.system.vibrate(0.012) end)
++      portrait_vibrate(0.012)
 +    elseif sound_code == 'cardFan2' then
-+      pcall(function() love.system.vibrate(0.018) end)
++      portrait_vibrate(0.018)
 +    elseif sound_code == 'coin1' or sound_code == 'coin2' or sound_code == 'chips1' or sound_code == 'chips2' then
-+      pcall(function() love.system.vibrate(0.02) end)
++      portrait_vibrate(0.02)
 +    elseif sound_code == 'tarot2' or sound_code == 'timpani' or sound_code == 'whoosh1' or sound_code == 'tarot1' or sound_code == 'tarotinfo' then
-+      pcall(function() love.system.vibrate(0.03) end)
++      portrait_vibrate(0.03)
 +    elseif sound_code == 'cancel' or sound_code == 'error' then
-+      pcall(function() love.system.vibrate(0.04) end)
++      portrait_vibrate(0.04)
 +    end
 +  end
 +
    if sound_code and G.SETTINGS.SOUND.volume > 0.001 then
      G.ARGS.play_sound = G.ARGS.play_sound or {}
      G.ARGS.play_sound.type = 'sound'
-@@ -1760,6 +1870,7 @@
+@@ -1760,6 +1901,7 @@
          end
          local desc_scale = G.LANG.font.DESCSCALE
          if G.F_MOBILE_UI then desc_scale = desc_scale*1.5 end
@@ -132,7 +163,7 @@
          if args.type == 'name' then
            final_line[#final_line+1] = {n=G.UIT.O, config={
              object = DynaText({string = {assembled_string},
-@@ -1874,6 +1985,9 @@
+@@ -1874,6 +2016,9 @@
      reroll_cost = 5,
      joker_slots = 5,
      ante_scaling = 1,

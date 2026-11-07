@@ -43,7 +43,7 @@ PROFILE_ROOT = os.path.join(os.environ.get("APPDATA", ""), "LOVE")
 
 # What --scenario all runs. boot is left out: smoke boots too, and boot is the
 # one that keeps the 12 s intro.
-SUITE = ["smoke", "menus", "run", "layouts", "stress", "swipe", "crt", "mod_folder"]
+SUITE = ["smoke", "menus", "run", "layouts", "stress", "swipe", "crt", "mod_folder", "keyboard", "haptics"]
 
 # Logical window sizes (dp / points), the space the layout code works in, the
 # OS the game is told it runs on, and the iOS safe-area insets (top, bottom)

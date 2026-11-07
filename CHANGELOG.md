@@ -2,6 +2,24 @@
 
 All notable changes to Balatro Portrait Mobile.
 
+## [v1.0.4](https://github.com/LoreanXavier/balatro-portrait-mobile/releases/tag/v1.0.4) - 2026-11-07
+
+- **The menu comes down when the keyboard closes** (#4). Closing Gboard from the
+  chevron under it told the game nothing, so the menu stayed lifted and the field
+  stayed open until Enter. The APK and the Zygisk module now watch for the keyboard
+  leaving, and a tap beside the field ends the edit too. Tested on a OnePlus 13.
+- **New APKs install over the last one on Termux** (#6). Each Termux build signed
+  with a new key, and the Termux command starts from a fresh clone, so Android
+  refused the update as a conflicting package. Termux now signs with the key PC
+  builds use. A Termux install from before 1.0.4 needs one last uninstall: see
+  [docs/TERMUX.md](docs/TERMUX.md).
+- **Haptic Feedback has a strength** (#7): Off, Light, Medium (the new default) or
+  Strong, which is the old length. Pulses keep at least 0.08 s apart, since those
+  landing on each other felt like a rumble. In the APK the level also sets the
+  motor's power on phones that allow it; some, like OnePlus, play their own fixed
+  effect whatever the app asks.
+- New `keyboard` and `haptics` headless scenarios, and `tests/signing_test.py`.
+
 ## [v1.0.3](https://github.com/LoreanXavier/balatro-portrait-mobile/releases/tag/v1.0.3) - 2026-11-07
 
 - **Swipe Only's cue stays clear of the hand** (#5). The corners of the fanned

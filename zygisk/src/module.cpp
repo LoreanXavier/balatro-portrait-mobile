@@ -8,6 +8,7 @@
 #include <cstring>
 #include <cstdio>
 #include <dirent.h>
+#include <pthread.h>
 #include <unistd.h>
 #include <dlfcn.h>
 #include <jni.h>
@@ -174,6 +175,88 @@ static jclass g_sdlactivity_cls = nullptr;  // global ref, cached
 static jfieldID g_singleton_fid = nullptr;
 static jmethodID g_setreqorient_mid = nullptr;
 
+// ---- Keyboard watch ----
+// Android tells an app nothing when its keyboard closes from the keyboard's own
+// chevron, and SDL only catches the back key. The APK carries this as
+// src/smali/org/libsdl/app/PortraitKeyboardWatch.smali; the official app's Java
+// is left alone, so here it runs from a thread of ours. Once the keyboard has been
+// seen and gone it reports what the back key reports, and SDL stops text input
+// (#4). Needs Android 11's WindowInsets: older versions go without.
+static void *keyboard_watch(void *) {
+  JNIEnv *env = nullptr;
+  if (g_vm->AttachCurrentThreadAsDaemon(&env, nullptr) != JNI_OK) return nullptr;
+
+  jmethodID shown = env->GetStaticMethodID(g_sdlactivity_cls, "isScreenKeyboardShown", "()Z");
+  jmethodID lost = env->GetStaticMethodID(g_sdlactivity_cls, "onNativeKeyboardFocusLost", "()V");
+  jclass activity = env->FindClass("android/app/Activity");
+  jclass window = env->FindClass("android/view/Window");
+  jclass view = env->FindClass("android/view/View");
+  jclass insets = env->FindClass("android/view/WindowInsets");
+  jclass type = env->FindClass("android/view/WindowInsets$Type");
+  if (env->ExceptionCheck()) env->ExceptionClear();
+  if (!shown || !lost || !activity || !window || !view || !insets || !type) {
+    LOGI("keyboard watch: not on this Android");
+    g_vm->DetachCurrentThread();
+    return nullptr;
+  }
+  jmethodID get_window = env->GetMethodID(activity, "getWindow", "()Landroid/view/Window;");
+  jmethodID get_decor = env->GetMethodID(window, "getDecorView", "()Landroid/view/View;");
+  jmethodID get_insets = env->GetMethodID(view, "getRootWindowInsets", "()Landroid/view/WindowInsets;");
+  jmethodID is_visible = env->GetMethodID(insets, "isVisible", "(I)Z");
+  jmethodID ime = env->GetStaticMethodID(type, "ime", "()I");
+  if (env->ExceptionCheck()) env->ExceptionClear();
+  if (!get_window || !get_decor || !get_insets || !is_visible || !ime) {
+    LOGI("keyboard watch: not on this Android");
+    g_vm->DetachCurrentThread();
+    return nullptr;
+  }
+  jint ime_type = env->CallStaticIntMethod(type, ime);
+  LOGI("keyboard watch running");
+
+  bool seen = false;
+  for (;;) {
+    usleep(200000);
+    if (env->PushLocalFrame(8) != 0) {
+      env->ExceptionClear();
+      continue;
+    }
+    bool open = env->CallStaticBooleanMethod(g_sdlactivity_cls, shown);
+    if (env->ExceptionCheck()) {
+      env->ExceptionClear();
+      open = false;
+    }
+    if (!open) {
+      seen = false;
+    } else {
+      jobject activity_now = env->GetStaticObjectField(g_sdlactivity_cls, g_singleton_fid);
+      jobject win = activity_now ? env->CallObjectMethod(activity_now, get_window) : nullptr;
+      jobject decor = win ? env->CallObjectMethod(win, get_decor) : nullptr;
+      jobject now = decor ? env->CallObjectMethod(decor, get_insets) : nullptr;
+      if (now != nullptr && !env->ExceptionCheck()) {
+        bool up = env->CallBooleanMethod(now, is_visible, ime_type);
+        if (env->ExceptionCheck()) {
+          env->ExceptionClear();
+        } else if (up) {
+          seen = true;
+        } else if (seen) {
+          seen = false;
+          env->CallStaticVoidMethod(g_sdlactivity_cls, lost);
+        }
+      }
+      if (env->ExceptionCheck()) env->ExceptionClear();
+    }
+    env->PopLocalFrame(nullptr);
+  }
+}
+
+static void start_keyboard_watch() {
+  static bool started = false;
+  if (started) return;
+  started = true;
+  pthread_t thread;
+  if (pthread_create(&thread, nullptr, keyboard_watch, nullptr) == 0) pthread_detach(thread);
+}
+
 static void force_portrait_jni() {
   if (!g_vm) return;
   JNIEnv *env = nullptr;
@@ -199,6 +282,7 @@ static void force_portrait_jni() {
     if (env->ExceptionCheck()) env->ExceptionClear();
     env->DeleteLocalRef(singleton);
   }
+  start_keyboard_watch();
 }
 
 static void my_setorient(int w, int h, int resizable, const char *hint) {
