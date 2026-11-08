@@ -1392,7 +1392,7 @@
  function create_UIBox_settings()
    local tabs = {}
    tabs[#tabs+1] = {
-@@ -2297,11 +2995,30 @@
+@@ -2297,11 +2995,31 @@
  end
  
  function G.UIDEF.settings_tab(tab)
@@ -1419,11 +1419,12 @@
 +      G.F_PORTRAIT and create_option_cycle({w = 5, label = 'Run Info/Options Button Position (Classic Only)',scale = 0.8, options = ml_runinfo_options_pos_opt, opt_callback = 'change_runinfo_options_position', current_option = (G.SETTINGS.runinfo_options_button_pos)}) or nil,
        G.F_RUMBLE and create_toggle({label = localize('b_set_rumble'), ref_table = G.SETTINGS, ref_value = 'rumble'}) or nil,
 +      G.F_PORTRAIT and create_toggle({label = 'Swipe Only Mode (no Play/Discard buttons)', ref_table = G.SETTINGS, ref_value = 'swipe_only_mode', callback = on_swipe_only_setting_changed}) or nil,
++      G.F_PORTRAIT and create_toggle({label = portrait_tap_descriptions_label(), ref_table = G.SETTINGS, ref_value = 'tap_descriptions'}) or nil,
 +      G.F_PORTRAIT and create_option_cycle({w = 5, id = 'haptic_level', label = 'Haptic Feedback',scale = 0.8, options = HAPTIC_OPTIONS, opt_callback = 'change_haptic_level', current_option = haptic_option()}) or nil,
        create_slider({label = localize('b_set_screenshake'),w = 4, h = 0.4, ref_table = G.SETTINGS, ref_value = 'screenshake', min = 0, max = 100}),
        create_toggle({label = localize('ph_display_stickers'), ref_table = G.SETTINGS, ref_value = 'run_stake_stickers'}),
        create_toggle({label = localize('b_high_contrast_cards'), ref_table = G.SETTINGS, ref_value = 'colourblind_option', callback = G.FUNCS.refresh_contrast_mode}),
-@@ -2335,6 +3052,7 @@
+@@ -2335,6 +3053,7 @@
        create_option_cycle({w = 4,scale = 0.8, label = localize("b_set_pixel_smoothing"),options = localize('ml_smoothing_opt'), opt_callback = 'change_pixel_smoothing', current_option = G.SETTINGS.GRAPHICS.texture_scaling}),
        create_slider({label = localize('b_set_CRT'),w = 4, h = 0.4, ref_table = G.SETTINGS.GRAPHICS, ref_value = 'crt', min = 0, max = 100}),
        create_option_cycle({w = 4,scale = 0.8, label = localize("b_set_CRT_bloom"),options = localize('ml_bloom_opt'), opt_callback = 'change_crt_bloom', current_option = G.SETTINGS.GRAPHICS.bloom}),
@@ -1431,7 +1432,7 @@
      }}
    end
  
-@@ -2391,7 +3109,7 @@
+@@ -2391,7 +3110,7 @@
        }}
      }}
    }}
@@ -1440,7 +1441,7 @@
  end
  
  function G.UIDEF.usage_tabs()
-@@ -2449,22 +3167,30 @@
+@@ -2449,22 +3168,30 @@
  
    table.sort(used_cards, function (a, b) return a.count > b.count end )
  
@@ -1475,7 +1476,7 @@
          
          {n=G.UIT.R, config={align = "bm"}, nodes={
            {n=G.UIT.R, config={align = "cm", minh = 0.7*G.CARD_H+0.1} , nodes={
-@@ -2474,21 +3200,21 @@
+@@ -2474,21 +3201,21 @@
              {n=G.UIT.T, config={text = v.count, scale = 0.35, colour = mix_colours(G.C.FILTER, G.C.WHITE, 0.8), shadow = true}}
            }},
            {n=G.UIT.R, config={align = "cm"}, nodes={
@@ -1501,7 +1502,7 @@
            }},
          }},
        }}
-@@ -2603,14 +3329,19 @@
+@@ -2603,14 +3330,19 @@
    }
    G.focused_profile = G.SETTINGS.profile
    local cheevs = {}
@@ -1523,7 +1524,7 @@
        create_progress_box(),
        UIBox_button({button = 'usage', label = {localize('k_card_stats')}, minw = 7.5, minh =1, focus_args = {nav = 'wide'}}),
      }},
-@@ -2786,14 +3517,23 @@
+@@ -2786,14 +3518,23 @@
      }},
    }}
    }}
@@ -1555,7 +1556,7 @@
    --t.nodes[1].config.mid = true
    t.config.id = 'you_win_UI'
    return t
-@@ -2866,11 +3606,78 @@
+@@ -2866,11 +3607,78 @@
    local eased_red = copy_table(G.GAME.round_resets.ante <= G.GAME.win_ante and G.C.RED or G.C.BLUE)
    eased_red[4] = 0
    ease_value(eased_red, 4, 0.8, nil, nil, true)
@@ -1639,7 +1640,7 @@
        {n=G.UIT.C, config={align = "cm"}, nodes={
          {n=G.UIT.R, config={align = "cm", padding = 0.05, colour = G.C.BLACK, emboss = 0.05, r = 0.1}, nodes={
            {n=G.UIT.R, config={align = "cm", padding = 0.08}, nodes={
-@@ -2916,17 +3723,32 @@
+@@ -2916,17 +3724,32 @@
          }}
        }},
      }}
@@ -1681,7 +1682,7 @@
    return t
  end
  
-@@ -2935,13 +3757,16 @@
+@@ -2935,13 +3758,16 @@
    local check_high_score = false
    local score_tab = {}
    local label_w, score_w, h = ({hand=true,poker_hand=true})[score] and 3.5 or 2.9, ({hand=true,poker_hand=true})[score] and 3.5 or 1, 0.5
@@ -1699,7 +1700,7 @@
      }
    end
    if score == 'furthest_round' then 
-@@ -2949,15 +3774,19 @@
+@@ -2949,15 +3775,19 @@
      check_high_score = true
      label = localize('k_round')
      score_tab = {
@@ -1723,7 +1724,7 @@
      }
    end
    if score == 'defeated_by' then 
-@@ -2971,7 +3800,9 @@
+@@ -2971,7 +3801,9 @@
      
      score_tab = {
        {n=G.UIT.R, config={align = "cm", minh = 0.6}, nodes={
@@ -1734,7 +1735,7 @@
        }},
        {n=G.UIT.R, config={align = "cm", padding = 0.1}, nodes={
          {n=G.UIT.O, config={object = blind_choice.animation}}
-@@ -2979,14 +3810,12 @@
+@@ -2979,14 +3811,12 @@
      }
    end
  
@@ -1751,7 +1752,7 @@
      }
    elseif score == 'hand' then
      check_high_score = true
-@@ -2997,12 +3826,12 @@
+@@ -2997,12 +3827,12 @@
          {n=G.UIT.O, config={w=0.3,h=0.3 , object = chip_sprite}}
        }},
        {n=G.UIT.C, config={align = "cm"}, nodes={
@@ -1766,7 +1767,7 @@
      }
    end
    return {n=G.UIT.R, config={align = "cm", padding = 0.05, r = 0.1, colour = darken(G.C.JOKER_GREY, 0.1), emboss = 0.05, func = check_high_score and 'high_score_alert' or nil, id = score}, nodes={
-@@ -3231,6 +4060,11 @@
+@@ -3231,6 +4061,11 @@
  end
  
  function G.UIDEF.view_deck(unplayed_only)
@@ -1778,7 +1779,7 @@
    local deck_tables = {}
    remove_nils(G.playing_cards)
    G.VIEWING_DECK = true
-@@ -3249,9 +4083,9 @@
+@@ -3249,9 +4084,9 @@
      if SUITS[suit_map[j]][1] then
        local view_deck = CardArea(
          G.ROOM.T.x + 0.2*G.ROOM.T.w/2,G.ROOM.T.h,
@@ -1791,7 +1792,7 @@
        table.insert(deck_tables, 
        {n=G.UIT.R, config={align = "cm", padding = 0}, nodes={
          {n=G.UIT.O, config={object = view_deck}}
-@@ -3342,63 +4176,140 @@
+@@ -3342,63 +4177,140 @@
      }}
    end
  
@@ -1983,7 +1984,7 @@
  end
  
  function tally_sprite(pos, value, tooltip)
-@@ -3495,6 +4406,9 @@
+@@ -3495,6 +4407,9 @@
  
  
  function create_UIBox_your_collection()
@@ -1993,7 +1994,7 @@
    set_discover_tallies()
    G.E_MANAGER:add_event(Event({
      blockable = false,
-@@ -3576,14 +4490,16 @@
+@@ -3576,14 +4491,16 @@
  
  function create_UIBox_your_collection_tarots()
    local deck_tables = {}
@@ -2014,7 +2015,7 @@
      table.insert(deck_tables, 
      {n=G.UIT.R, config={align = "cm", padding = 0, no_fill = true}, nodes={
        {n=G.UIT.O, config={object = G.your_collection[j]}}
-@@ -3596,12 +4512,19 @@
+@@ -3596,12 +4513,19 @@
      table.insert(tarot_options, localize('k_page')..' '..tostring(i)..'/'..tostring(math.floor(#G.P_CENTER_POOLS.Tarot/11)))
    end
  
@@ -2040,7 +2041,7 @@
      end
    end
  
-@@ -3661,13 +4584,21 @@
+@@ -3661,13 +4585,21 @@
  function create_UIBox_your_collection_planets()
    local deck_tables = {}
  
@@ -2065,7 +2066,7 @@
      table.insert(deck_tables, 
      {n=G.UIT.R, config={align = "cm", padding = 0, no_fill = true}, nodes={
        {n=G.UIT.O, config={object = G.your_collection[j]}}
-@@ -3676,8 +4607,8 @@
+@@ -3676,8 +4608,8 @@
    end
  
      for j = 1, #G.your_collection do
@@ -2076,7 +2077,7 @@
        local card = Card(G.your_collection[j].T.x + G.your_collection[j].T.w/2, G.your_collection[j].T.y, G.CARD_W, G.CARD_H, nil, center)
        card:start_materialize(nil, i>1 or j>1)
        G.your_collection[j]:emplace(card)
-@@ -3900,7 +4831,7 @@
+@@ -3900,7 +4832,7 @@
                      {n=G.UIT.O, config={id = nil, func = 'RUN_SETUP_check_back_name', object = Moveable()}},
                    }},
                    {n=G.UIT.R, config={align = "cm", colour = G.C.WHITE, emboss = 0.1, minh = 2.2, r = 0.1}, nodes={
@@ -2085,7 +2086,7 @@
                    }}       
                  }},
                }},
-@@ -3965,6 +4896,16 @@
+@@ -3965,6 +4897,16 @@
  end
  
  function create_UIBox_your_collection_blinds(exit)
@@ -2102,7 +2103,7 @@
    local blind_matrix = {
      {},{},{}, {}, {}, {}
    }
-@@ -3979,6 +4920,17 @@
+@@ -3979,6 +4921,17 @@
    for k, v in ipairs(blind_tab) do
      local discovered = v.discovered
      local temp_blind = AnimatedSprite(0,0,1.3,1.3, G.ANIMATION_ATLAS['blind_chips'], discovered and v.pos or G.b_undiscovered.pos)
@@ -2120,7 +2121,7 @@
      temp_blind:define_draw_steps({
        {shader = 'dissolve', shadow_height = 0.05},
        {shader = 'dissolve'}
-@@ -4027,6 +4979,19 @@
+@@ -4027,6 +4980,19 @@
      }}
    end
  
@@ -2140,7 +2141,7 @@
    G.E_MANAGER:add_event(Event({
      trigger = 'immediate',
      func = (function()
-@@ -4050,27 +5015,35 @@
+@@ -4050,27 +5016,35 @@
      local blind_chip = Sprite(0,0,0.2,0.2,G.ASSET_ATLAS["ui_"..(G.SETTINGS.colourblind_option and 2 or 1)], {x=0, y=0})
        blind_chip.states.drag.can = false
        ante_amounts[#ante_amounts+1] = {n=G.UIT.R, config={align = "cm", padding = 0.03}, nodes={
@@ -2186,7 +2187,7 @@
            }}
          }},
          {n=G.UIT.R, config={align = "cm"}, nodes=ante_amounts}
-@@ -4096,12 +5069,38 @@
+@@ -4096,12 +5070,38 @@
    local _dollars = blind.dollars
    local loc_target = localize{type = 'raw_descriptions', key = blind.key, set = 'Blind', vars = vars or blind.vars}
    local loc_name = localize{type = 'name_text', key = blind.key, set = 'Blind'}
@@ -2226,7 +2227,7 @@
        end
      end
      local stake_sprite = get_stake_sprite(G.GAME.stake or 1, 0.4)
-@@ -4272,9 +5271,10 @@
+@@ -4272,9 +5272,10 @@
  
  function G.UIDEF.multiline_credit_text(_lines)
    local t = {}
@@ -2239,7 +2240,7 @@
      }}
    end
  
-@@ -4287,13 +5287,15 @@
+@@ -4287,13 +5288,15 @@
    local curr_collab = G.collab_credits[G.viewed_collab] or G.collab_credits['The Binding of Isaac']
    local collab_sprite = Sprite(0,0,0.8*G.CARD_W,0.8*G.CARD_H,G.ASSET_ATLAS[curr_collab.art..'_1'], {x=2,y=0})
  
@@ -2257,7 +2258,7 @@
            'All rights reserved. No part of this work may be',
            'reproduced in any form or by any means— graphic,',
            'electronic, or mechanical, including recording,',
-@@ -4301,9 +5303,9 @@
+@@ -4301,9 +5304,9 @@
            'systems—without the written permission of the publisher',
            'or the designated rightsholder, as applicable.'
          })},
@@ -2269,7 +2270,7 @@
          {n=G.UIT.R, config={align = "cm", padding = 0.0}, nodes={
            {n=G.UIT.R, config={align = "cm", colour = G.C.WHITE, r = 0.3}, nodes={
              {n=G.UIT.O, config={colour = G.C.BLUE, object = collab_sprite, hover = true, can_collide = false}},
-@@ -4326,7 +5328,11 @@
+@@ -4326,7 +5329,11 @@
  end
  
  function G.UIDEF.credits()
@@ -2282,7 +2283,7 @@
    local t =   create_UIBox_generic_options({contents ={
        {n=G.UIT.R, config={align = "cm", padding = 0}, nodes={
          create_tabs(
-@@ -4335,7 +5341,7 @@
+@@ -4335,7 +5342,7 @@
                label = "Production",
                chosen = true,
                tab_definition_function = function() return 
@@ -2291,7 +2292,7 @@
                        {n=G.UIT.C, config={align = "cm", padding = 0.2,outline_colour = G.C.JOKER_GREY, r = 0.1, outline = 1}, nodes={
                        {n=G.UIT.R, config={align = "cm", padding = 0}, nodes={
                          {n=G.UIT.T, config={text = "Original Soundtrack", scale = text_scale*0.8, colour = G.C.UI.TEXT_LIGHT, shadow = true}},
-@@ -4545,7 +5551,7 @@
+@@ -4545,7 +5552,7 @@
              {
                label = "Publishing",
                tab_definition_function = function() return 
@@ -2300,7 +2301,7 @@
                    {n=G.UIT.C, config={align = "cm", padding = 0.1,outline_colour = G.C.JOKER_GREY, r = 0.1, outline = 1}, nodes={
                      {n=G.UIT.R, config={align = "cm", padding = 0}, nodes={
                        {n=G.UIT.T, config={text = "Playstack", scale = text_scale*0.6, colour = G.C.RED, shadow = true}},
-@@ -4994,7 +6000,7 @@
+@@ -4994,7 +6001,7 @@
                    },
                  }
  
@@ -2309,7 +2310,7 @@
                    {n=G.UIT.O, config={id = nil, func = 'CREDITS_check_collab', object = Moveable()}},
                  }}
                
-@@ -5008,8 +6014,8 @@
+@@ -5008,8 +6015,8 @@
                  G.viewed_collab = collab_options[1]
  
                  return 
@@ -2320,7 +2321,7 @@
                          create_option_cycle({options = 
                          collab_options, opt_callback = 'change_viewed_collab', current_option = 1, colour = G.C.RED, w = 4, mid = middle
                          })
-@@ -5020,7 +6026,7 @@
+@@ -5020,7 +6027,7 @@
              {
                label = "Sounds",
                tab_definition_function = function() return 
@@ -2329,7 +2330,7 @@
                    {n=G.UIT.R, config={align = "cm", padding = 0}, nodes={
                      {n=G.UIT.T, config={text = "All sounds not listed here fall under ", scale = text_scale*0.6, colour = G.C.UI.TEXT_LIGHT, shadow = true}},
                      {n=G.UIT.T, config={text = "Creative Commons - CC0", scale = text_scale*0.6, colour = G.C.BLUE, shadow = true}},
-@@ -5071,7 +6077,7 @@
+@@ -5071,7 +6078,7 @@
              {
                label = "Imagery",
                tab_definition_function = function() return 
@@ -2338,7 +2339,7 @@
                    {n=G.UIT.R, config={align = "cm", padding = 0.1,outline_colour = G.C.JOKER_GREY, r = 0.1, outline = 1}, nodes={
                      {n=G.UIT.R, config={align = "cm", padding = 0}, nodes={
                        {n=G.UIT.T, config={text = 'The font "m6x11.ttf" by Daniel Linssen (https://managore.itch.io/m6x11)', scale = text_scale*0.5, colour = G.C.UI.TEXT_LIGHT, shadow = true}},
-@@ -5197,6 +6203,7 @@
+@@ -5197,6 +6204,7 @@
                end,
              },
          },
@@ -2346,7 +2347,7 @@
          snap_to_nav = true}),
        }}
    }})
-@@ -5501,6 +6508,11 @@
+@@ -5501,6 +6509,11 @@
  
  function G.UIDEF.challenge_list(from_game_over)
    G.CHALLENGE_PAGE_SIZE = 10
@@ -2358,7 +2359,7 @@
    local challenge_pages = {}
    for i = 1, math.ceil(#G.CHALLENGES/G.CHALLENGE_PAGE_SIZE) do
      table.insert(challenge_pages, localize('k_page')..' '..tostring(i)..'/'..tostring(math.ceil(#G.CHALLENGES/G.CHALLENGE_PAGE_SIZE)))
-@@ -5515,25 +6527,48 @@
+@@ -5515,25 +6528,48 @@
        _ch_comp = _ch_comp + 1
      end
    end
@@ -2423,7 +2424,7 @@
  end
  
  function G.UIDEF.challenge_list_page(_page)
-@@ -6023,6 +7058,10 @@
+@@ -6023,6 +7059,10 @@
    local type_colour = G.C.BLUE
  
    local scale = 0.39
@@ -2434,7 +2435,7 @@
    G.setup_seed = ''
  
    local t = {n=G.UIT.ROOT, config={align = "cm", colour = G.C.CLEAR, minh = 6.6, minw = 6}, nodes={
-@@ -6082,8 +7121,8 @@
+@@ -6082,8 +7122,8 @@
                                    {n=G.UIT.R, config={align = "cm", r = 0.1, minw = 4, maxw = 4, minh = 0.6}, nodes={
                                      {n=G.UIT.O, config={id = nil, func = 'RUN_SETUP_check_back_name', object = Moveable()}},
                                    }},
@@ -2445,7 +2446,7 @@
                                    }}       
                                  }},
                                  {n=G.UIT.C, config={align = "cm"}, nodes={
-@@ -6104,13 +7143,16 @@
+@@ -6104,13 +7144,16 @@
                        {n=G.UIT.O, config={id = nil, func = 'RUN_SETUP_check_stake', insta_func = true, object = Moveable()}},
                      }},
                  }},
@@ -2464,7 +2465,7 @@
                    }},
                      {n=G.UIT.C, config={align = "cm", minw = 5, minh = 0.8, padding = 0.2, r = 0.1, hover = true, colour = G.C.BLUE, button = "start_setup_run", shadow = true, func = 'can_start_run'}, nodes={
                        {n=G.UIT.R, config={align = "cm", padding = 0}, nodes={
-@@ -6155,6 +7197,23 @@
+@@ -6155,6 +7198,23 @@
      }}
  end
  
@@ -2488,7 +2489,7 @@
  function create_UIBox_profile_button()
  
    local letters = {}
-@@ -6209,37 +7268,70 @@
+@@ -6209,37 +7269,70 @@
  
    local quit_func = 'quit'
  
@@ -2587,7 +2588,7 @@
  end
  
  function create_UIBox_main_menu_competittion_name()
-@@ -6260,6 +7352,11 @@
+@@ -6260,6 +7353,11 @@
  end
  
  function G.UIDEF.language_selector() 
@@ -2599,7 +2600,7 @@
    local rows = {}
    local langs = {}
    for k, v in pairs(G.LANGUAGES) do
-@@ -6271,9 +7368,9 @@
+@@ -6271,9 +7369,9 @@
    local _row = {}
    for k, v in ipairs(langs) do
      if not G.F_HIDE_BETA_LANGS or (not v.beta) then
@@ -2611,7 +2612,7 @@
          }}
        }}
      end
-@@ -6330,7 +7427,7 @@
+@@ -6330,7 +7428,7 @@
      }))
    end
  

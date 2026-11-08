@@ -33,13 +33,14 @@
      if love.system.getOS() == 'Nintendo Switch' then
          self.F_HIDE_BETA_LANGS = true
          self.F_BASIC_CREDITS = true
-@@ -157,8 +176,14 @@
+@@ -157,8 +176,15 @@
          language = 'en-us',
          screenshake = true,
          run_stake_stickers = false,
 +        haptic_enabled = true,
 +        haptic_level = 3,
 +        swipe_only_mode = false,
++        tap_descriptions = true,
 +        portrait_layout = 1,
          rumble = self.F_RUMBLE,
          play_button_pos = 2,
@@ -48,7 +49,7 @@
          GAMESPEED = 1,
          paused = false,
          SOUND = {
-@@ -520,3 +545,122 @@
+@@ -520,3 +546,146 @@
  end
  
  G = Game()
@@ -60,6 +61,30 @@
 +    SUCCESS = {left = 0.5, right = 0.5, duration = 0.1, android_duration = 0.025},
 +    ERROR = {left = 1.0, right = 1.0, duration = 0.05, android_duration = 0.04},
 +}
++
++-- The option for a tap keeping a card's description open (Controller:
++-- portrait_keeps_description); off, a description is only for a held finger.
++PORTRAIT_TAP_DESCRIPTIONS_LABELS = {
++    ['en-us'] = 'Tap for Descriptions',
++    ['de'] = 'Beschreibung per Tippen',
++    ['es_419'] = 'Descripción al tocar',
++    ['es_ES'] = 'Descripción al tocar',
++    ['fr'] = 'Description au toucher',
++    ['id'] = 'Ketuk untuk deskripsi',
++    ['it'] = 'Descrizione al tocco',
++    ['ja'] = 'タップで説明を表示',
++    ['ko'] = '탭하여 설명 보기',
++    ['nl'] = 'Beschrijving bij tikken',
++    ['pl'] = 'Opis po dotknięciu',
++    ['pt_BR'] = 'Descrição ao tocar',
++    ['ru'] = 'Описание по нажатию',
++    ['zh_CN'] = '点击显示说明',
++    ['zh_TW'] = '點擊顯示說明',
++}
++
++function portrait_tap_descriptions_label()
++    return PORTRAIT_TAP_DESCRIPTIONS_LABELS[G.SETTINGS.language] or PORTRAIT_TAP_DESCRIPTIONS_LABELS['en-us']
++end
 +
 +-- The Haptic Feedback option. Off is haptic_enabled = false; the rest scale how
 +-- long a pulse lasts, and how hard where the phone can tell (see portrait_vibrate).

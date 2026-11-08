@@ -2,6 +2,18 @@
 
 All notable changes to Balatro Portrait Mobile.
 
+## [v1.0.6](https://github.com/LoreanXavier/balatro-portrait-mobile/releases/tag/v1.0.6) - 2026-11-08
+
+- **A tap shows a card's description** (#9). A tap on a joker, a consumable, or a
+  card in the shop, a pack or the collection leaves its description open with your
+  finger out of the way; another tap on it, a tap on the description or a tap
+  anywhere else closes it. A finger held down still works, and cards in your hand
+  still go up on a tap. It's on by default: **Tap for Descriptions** in Settings,
+  under Game, in the game's language, turns it off for the old way.
+- A description left open never passes a tap to a button under it, so it can't
+  take you out of the shop by Next Round.
+- New `tap_tooltip` scenario, and `suite.py --only tap` runs it alone.
+
 ## [v1.0.5](https://github.com/LoreanXavier/balatro-portrait-mobile/releases/tag/v1.0.5) - 2026-11-08
 
 - **No more crash after Stats.** Opening the usage pages of Stats (jokers,

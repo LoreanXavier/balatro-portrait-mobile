@@ -43,6 +43,11 @@ def full_matrix():
     groups += [group("zygisk-" + m, R.SUITE + ["mods"], ZYGISK_PHONES, source="zygisk", mods=m) for m in ZYGISK_MOD_SETS]
     groups += [group(m, R.SUITE + ["mods"], PHONES, mods=m) for m in MOD_SETS]
     groups += [group(lang, LANG_SCENARIOS, LANG_PHONES, lang=lang) for lang in LANGS]
+    # Taps on cards: a few sizes, and each language once for the option's label.
+    groups += [group("tap", ["tap_tooltip"], PHONES)]
+    groups += [group("tap-zygisk", ["tap_tooltip"], ["phone"], source="zygisk")]
+    groups += [group("tap-" + m, ["tap_tooltip"], ["phone"], mods=m) for m in ("smods-26", "smods-26,amulet,cryptid")]
+    groups += [group("tap-" + lang, ["tap_tooltip"], ["small"], lang=lang) for lang in LANGS]
     groups += [group("mod_menus", ["mod_menus"], PHONES, mods="smods-26")]
     groups += [group("mod_menus-zygisk", ["mod_menus"], ZYGISK_PHONES, source="zygisk", mods="smods-26", lang="es_ES")]
     groups += [group("mod_menus-" + lang, ["mod_menus"], LANG_PHONES, mods="smods-26", lang=lang) for lang in LANGS]

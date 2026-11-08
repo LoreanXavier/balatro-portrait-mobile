@@ -256,10 +256,9 @@ python build.py --steamodded latest    # the newest release (may not be tested y
 
 A bundled mod installs itself on the first launch; restart once and it is on.
 
-**Tested for 1.0.5** in all three layouts, on a 360 dp phone, a 412 dp phone,
-an iPhone SE, a tablet and a foldable: start, every menu, a full run, the stress
-test and the Mods menu, and every screen and tooltip in each of the game's
-languages.
+**Tested for 1.0.6**: tapping cards in all three layouts, on phones and a tablet,
+with the option's label in each of the game's languages, and by hand on a OnePlus 13.
+Every screen and tooltip in each language was last swept for 1.0.5.
 
 | Mods | |
 |---|:-:|

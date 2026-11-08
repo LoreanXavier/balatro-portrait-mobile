@@ -87,13 +87,14 @@
      self.SEED = os.time()
      self.TIMERS = {
          TOTAL=0,
-@@ -195,11 +176,16 @@
+@@ -195,11 +176,17 @@
          language = 'en-us',
          screenshake = true,
          run_stake_stickers = false,
 +        haptic_enabled = true,
 +        haptic_level = 3,
 +        swipe_only_mode = false,
++        tap_descriptions = true,
 +        portrait_layout = 1,
          rumble = self.F_RUMBLE,
          play_button_pos = 2,
@@ -105,7 +106,7 @@
          SOUND = {
              volume = 50,
              music_volume = 100,
-@@ -228,7 +214,7 @@
+@@ -228,7 +215,7 @@
          GRAPHICS = {
              texture_scaling = 2,
              shadows = 'On',
@@ -114,7 +115,7 @@
              bloom = 1
          },
      }
-@@ -307,8 +293,8 @@
+@@ -307,8 +294,8 @@
      --||||||||||||||||||||||||||||||
      self.TILESIZE = 20
      self.TILESCALE = 3.65
@@ -125,7 +126,7 @@
      self.DRAW_HASH_BUFF = 2
      self.CARD_W = 2.4*35/41
      self.CARD_H = 2.4*47/41
-@@ -340,18 +326,15 @@
+@@ -340,18 +327,15 @@
          STANDARD_PACK = 17,
          BUFFOON_PACK = 18,
          NEW_ROUND = 19,
@@ -146,7 +147,7 @@
      }
      self.STAGE = self.STAGES.MAIN_MENU
      self.STATE = self.STATES.SPLASH
-@@ -387,7 +370,6 @@
+@@ -387,7 +371,6 @@
      self.DEBUG = false
      self.ANIMATION_FPS = 10
      self.VIBRATION = 0
@@ -154,7 +155,7 @@
      self.CHALLENGE_WINS = 5
  
      --||||||||||||||||||||||||||||||
-@@ -563,3 +545,122 @@
+@@ -563,3 +546,146 @@
  end
  
  G = Game()
@@ -166,6 +167,30 @@
 +    SUCCESS = {left = 0.5, right = 0.5, duration = 0.1, android_duration = 0.025},
 +    ERROR = {left = 1.0, right = 1.0, duration = 0.05, android_duration = 0.04},
 +}
++
++-- The option for a tap keeping a card's description open (Controller:
++-- portrait_keeps_description); off, a description is only for a held finger.
++PORTRAIT_TAP_DESCRIPTIONS_LABELS = {
++    ['en-us'] = 'Tap for Descriptions',
++    ['de'] = 'Beschreibung per Tippen',
++    ['es_419'] = 'Descripción al tocar',
++    ['es_ES'] = 'Descripción al tocar',
++    ['fr'] = 'Description au toucher',
++    ['id'] = 'Ketuk untuk deskripsi',
++    ['it'] = 'Descrizione al tocco',
++    ['ja'] = 'タップで説明を表示',
++    ['ko'] = '탭하여 설명 보기',
++    ['nl'] = 'Beschrijving bij tikken',
++    ['pl'] = 'Opis po dotknięciu',
++    ['pt_BR'] = 'Descrição ao tocar',
++    ['ru'] = 'Описание по нажатию',
++    ['zh_CN'] = '点击显示说明',
++    ['zh_TW'] = '點擊顯示說明',
++}
++
++function portrait_tap_descriptions_label()
++    return PORTRAIT_TAP_DESCRIPTIONS_LABELS[G.SETTINGS.language] or PORTRAIT_TAP_DESCRIPTIONS_LABELS['en-us']
++end
 +
 +-- The Haptic Feedback option. Off is haptic_enabled = false; the rest scale how
 +-- long a pulse lasts, and how hard where the phone can tell (see portrait_vibrate).
