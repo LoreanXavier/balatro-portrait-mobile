@@ -1,19 +1,25 @@
 --- a/card.lua
 +++ b/card.lua
-@@ -4266,9 +4266,11 @@
+@@ -4266,9 +4266,17 @@
  
  function Card:move(dt)
      Moveable.move(self, dt)
 -    --self:align()
      if self.children.h_popup then
          self.children.h_popup:set_alignment(self:align_h_popup())
++        -- set_alignment hands the box a new role with no offset, and
++        -- align_to_major skips an alignment it has seen the frame before: every
++        -- other frame the description sat on the card itself, was pushed back up
++        -- onto the screen from there, and shook while the card was dragged low
++        -- (#11). It is placed again every frame.
++        if G.F_PORTRAIT then self.children.h_popup.alignment.prev_type = nil end
 +        if prepare_portrait_popup_fit then
 +            prepare_portrait_popup_fit(self.children.h_popup)
 +        end
      end
  end
  
-@@ -4277,31 +4279,72 @@
+@@ -4277,31 +4285,72 @@
          local popup_direction = (self.children.buy_button or (self.area and self.area.config.view_deck) or (self.area and self.area.config.type == 'shop')) and 'cl' or 
                                  (self.T.y < G.CARD_H*0.8) and 'bm' or
                                  'tm'
@@ -97,7 +103,7 @@
  
  function Card:hover()
      self:juice_up(0.05, 0.03)
-@@ -4382,6 +4425,23 @@
+@@ -4382,6 +4431,23 @@
              self.tilt_var.my = ((0.5 + 0.5*self.ambient_tilt*math.sin(tilt_angle))*self.VT.h+self.VT.y+G.ROOM.T.y)*G.TILESIZE*G.TILESCALE
              self.tilt_var.amt = self.ambient_tilt*(0.5+math.cos(tilt_angle))*tilt_factor
          end
@@ -121,7 +127,7 @@
          --Any particles
          if self.children.particles then self.children.particles:draw() end
  
-@@ -4398,7 +4458,12 @@
+@@ -4398,7 +4464,12 @@
                  self.children.buy_button.states.visible = false
              end
          end
@@ -135,7 +141,7 @@
  
          if self.vortex then
              if self.facing == 'back' then 
-@@ -4564,10 +4629,18 @@
+@@ -4564,10 +4635,18 @@
              if k ~= 'focused_ui' and k ~= "front" and k ~= "back" and k ~= "soul_parts" and k ~= "center" and k ~= 'floating_sprite' and k~= "shadow" and k~= "use_button" and k ~= 'buy_button' and k ~= 'buy_and_use_button' and k~= "debuff" and k ~= 'price' and k~= 'particles' and k ~= 'h_popup' then v:draw() end
          end
  
@@ -155,7 +161,7 @@
          add_to_drawhash(self)
          self:draw_boundingrect()
      end
-@@ -4584,13 +4657,40 @@
+@@ -4584,13 +4663,40 @@
      if self.ability.consumeable or self.ability.set == 'Joker' or (self.area and self.area == G.pack_cards) then
          if self.highlighted and self.area and self.area.config.type ~= 'shop' then
              local x_off = (self.ability.consumeable and -0.1 or 0)

@@ -56,6 +56,7 @@ DEVICES = {
     "fold":       ((720, 880), "Android", None),    # a foldable opened, nearly square
     "small":      ((320, 640), "Android", None),    # the smallest phones still in use
     "long":       ((360, 840), "Android", None),    # 21:9
+    "razr":       ((411, 1005), "Android", None),   # moto razr 2023, a 22:9 foldable (#11)
     "iphone-se":  ((375, 667), "iOS", (20, 0)),     # 16:9, home button
     "iphone15":   ((393, 852), "iOS", (59, 34)),    # Dynamic Island
     "iphone-max": ((430, 932), "iOS", (59, 34)),

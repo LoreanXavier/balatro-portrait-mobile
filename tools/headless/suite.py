@@ -46,6 +46,10 @@ def full_matrix():
     # Taps on cards: a few sizes, and each language once for the option's label.
     groups += [group("tap", ["tap_tooltip"], PHONES)]
     groups += [group("tap-zygisk", ["tap_tooltip"], ["phone"], source="zygisk")]
+    # A sound played many times at once, and one that cannot be opened (#10).
+    groups += [group("sound", ["sound_burst"], ["phone"]), group("sound-zygisk", ["sound_burst"], ["phone"], source="zygisk")]
+    # #11: a dragged card's description, and Game Over's buttons, on the reporter's screen.
+    groups += [group("issue11", ["drag_tooltip", "game_over_buttons"], ["razr"]), group("issue11-zygisk", ["drag_tooltip", "game_over_buttons"], ["razr"], source="zygisk")]
     groups += [group("tap-" + m, ["tap_tooltip"], ["phone"], mods=m) for m in ("smods-26", "smods-26,amulet,cryptid")]
     groups += [group("tap-" + lang, ["tap_tooltip"], ["small"], lang=lang) for lang in LANGS]
     groups += [group("mod_menus", ["mod_menus"], PHONES, mods="smods-26")]

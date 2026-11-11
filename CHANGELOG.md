@@ -2,6 +2,30 @@
 
 All notable changes to Balatro Portrait Mobile.
 
+## [v1.0.7](https://github.com/LoreanXavier/balatro-portrait-mobile/releases/tag/v1.0.7) - 2026-11-11
+
+- **Zygisk: no more crash at start after an update** ("Could not open file
+  resources/fonts/TypoQuik-Bold.ttf"). Once Android has made the game's folder
+  under `/sdcard/Android/data`, the module built the portrait code there, while
+  its loader and the game read the internal save folder. The game kept running
+  the code of an older install, and when that install had Readabletro on and the
+  new one has it off, the font it asks for was gone. The code is now always built
+  in the internal save folder, and a stale build is replaced on the first start.
+- **Rootless APK: no more crash when many sounds play at once** (#10, "Could not
+  open file resources/sounds/paper1.ogg"). When every copy of a sound is busy,
+  the sound thread now copies the one already in memory instead of opening the
+  file again, and a sound it still cannot open is skipped instead of crashing
+  the game.
+- **A dragged card's description no longer shakes** (#11). Low on the screen
+  the description jumped between two places every frame: every other frame it
+  was placed on the card itself and pushed back up onto the screen from there.
+- **Game Over's Main Menu button is laid out right from the start** (#11). Its
+  text was drawn at its portrait size over a button laid out for the smaller
+  one, off to the right and over the New Run button, until Jimbo came in.
+- New `sound_burst` scenario, and `suite.py --only sound` runs it alone.
+- New `drag_tooltip` and `game_over_buttons` scenarios on a `razr` screen
+  (411x1005), and `suite.py --only issue11` runs them.
+
 ## [v1.0.6](https://github.com/LoreanXavier/balatro-portrait-mobile/releases/tag/v1.0.6) - 2026-11-08
 
 - **A tap shows a card's description** (#9). A tap on a joker, a consumable, or a

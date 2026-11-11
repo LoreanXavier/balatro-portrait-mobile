@@ -13,6 +13,16 @@
 local FOLDER = "portrait_game"
 local ERROR_FILE = "portrait_patch_error.txt"
 
+-- This chunk runs before love.conf, when LÖVE on Android can still have its
+-- save folder on external storage (/sdcard/Android/data/...) once the system
+-- has made that folder. The module's loader only reads the internal one, and
+-- so does the game after its conf, so the built game goes there. Otherwise a
+-- new build lands on the sdcard while the game keeps running the old one.
+if love.filesystem._setAndroidSaveExternal then
+    love.filesystem._setAndroidSaveExternal(false)
+    love.filesystem.setIdentity(love.filesystem.getIdentity())
+end
+
 local function split_lines(data)
     local lines, count, pos = {}, 0, 1
     while pos <= #data do

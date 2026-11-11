@@ -1240,12 +1240,21 @@ end
 --Sets the text of a row to config.text_scale once the box is built, for rows
 --whose label line has to stay exactly as vanilla wrote it (another mod's
 --Lovely patch anchors on that line).
+--The first call can come while the box is still being built, and the rest of
+--the build lays it out again at the old size: the text was drawn at the new
+--size over a button sized for the old one (#11, Game Over's Main Menu, until
+--Jimbo came in and the box was laid out again). So it is laid out once more on
+--the next frame.
 G.FUNCS.portrait_text_scale = function(e)
-  if e.config.text_scaled or not G.F_PORTRAIT then return end
-  for _, child in ipairs(e.children) do
-    if child.UIT == G.UIT.T and child.config then child.config.scale = e.config.text_scale end
+  if e.config.text_scaled == true or not G.F_PORTRAIT then return end
+  if not e.config.text_scaled then
+    for _, child in ipairs(e.children) do
+      if child.UIT == G.UIT.T and child.config then child.config.scale = e.config.text_scale end
+    end
+    e.config.text_scaled = 'pending'
+  else
+    e.config.text_scaled = true
   end
-  e.config.text_scaled = true
   portrait_relayout(e)
 end
 
