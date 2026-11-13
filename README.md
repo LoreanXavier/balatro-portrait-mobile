@@ -256,9 +256,9 @@ python build.py --steamodded latest    # the newest release (may not be tested y
 
 A bundled mod installs itself on the first launch; restart once and it is on.
 
-**Tested for 1.0.7**: the fixes by hand on a OnePlus 13, with the Zygisk
-module and a rootless APK (also at a moto razr's 411x1005), plus the quick
-headless matrix, the tap tests and the new sound and #11 tests.
+**Tested for 1.0.8**: Steamodded's Full Deck screen by hand on a OnePlus 13 with
+a rootless APK, and headless on seven screen sizes, in Polish and without
+Steamodded, plus the quick matrix and the mod menus.
 Every screen and tooltip in each language was last swept for 1.0.5.
 
 | Mods | |

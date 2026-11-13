@@ -48,6 +48,10 @@ def full_matrix():
     groups += [group("tap-zygisk", ["tap_tooltip"], ["phone"], source="zygisk")]
     # A sound played many times at once, and one that cannot be opened (#10).
     groups += [group("sound", ["sound_burst"], ["phone"]), group("sound-zygisk", ["sound_burst"], ["phone"], source="zygisk")]
+    # #12: the Full Deck screen, Steamodded's and the mod's own.
+    groups += [group("deck-smods-26", ["deck_view"], ["phone", "narrow", "small", "razr", "iphone-se", "tablet", "fold"], mods="smods-26"),
+               group("deck-smods-26-pl", ["deck_view"], ["narrow"], mods="smods-26", lang="pl"),
+               group("deck", ["deck_view"], ["phone", "narrow", "small"])]
     # #11: a dragged card's description, and Game Over's buttons, on the reporter's screen.
     groups += [group("issue11", ["drag_tooltip", "game_over_buttons"], ["razr"]), group("issue11-zygisk", ["drag_tooltip", "game_over_buttons"], ["razr"], source="zygisk")]
     groups += [group("tap-" + m, ["tap_tooltip"], ["phone"], mods=m) for m in ("smods-26", "smods-26,amulet,cryptid")]

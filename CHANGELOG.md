@@ -2,6 +2,18 @@
 
 All notable changes to Balatro Portrait Mobile.
 
+## [v1.0.8](https://github.com/LoreanXavier/balatro-portrait-mobile/releases/tag/v1.0.8) - 2026-11-13
+
+- **Steamodded's Full Deck screen in the phone's order** (#12). Steamodded
+  replaces the game's View Deck with one laid out for landscape: the deck, its
+  counts and a column of ranks beside the cards, which got under half the width
+  of a phone. It is now put in the order the mod's own Deck screen has: the deck
+  and its counts side by side on top, the four suits in one row, the ranks across,
+  and the cards under them over the whole width (195 px of a 412 px phone before,
+  359 px now). Its page of more suits gets the same order.
+- New `deck_view` scenario, and `suite.py --only deck` runs it, with and without
+  Steamodded and in Polish.
+
 ## [v1.0.7](https://github.com/LoreanXavier/balatro-portrait-mobile/releases/tag/v1.0.7) - 2026-11-11
 
 - **Zygisk: no more crash at start after an update** ("Could not open file

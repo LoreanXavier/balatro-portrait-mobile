@@ -2,7 +2,7 @@ PORTRAIT_CONFIG = {
     -- Single source of truth for the mod version: build.py parses it from
     -- here, and the Zygisk packaging refuses to ship a module.prop that
     -- disagrees with it. Bump this, module.prop and the CHANGELOG together.
-    version = "1.0.7",
+    version = "1.0.8",
     scale_factor = 0.63,
     hud_top_space = 13,
     bottom_margin = 0.35,
@@ -1256,10 +1256,97 @@ local function fit_overlay_width(box)
     end
 end
 
+--Steamodded's View Deck replaces the game's and keeps the landscape order: the
+--deck, its counts and a column of ranks beside the cards, which got under half
+--the width of a phone (#12). Built, it is put in the order the mod's own Deck
+--screen has: the deck and its counts side by side on top, the suits in one row,
+--the ranks across, and the cards under them over the whole width.
+local function has_card_area(node)
+    local found = false
+    each_overlay_node(node, function(n)
+        local obj = n.UIT == G.UIT.O and n.config.object
+        if obj and obj.is and obj:is(CardArea) then found = true end
+    end)
+    return found
+end
+
+local function restack_smods_deck(box)
+    local root = box and box.UIRoot
+    local main = root and root.children and root.children[2]
+    if not (main and main.UIT == G.UIT.R and main.children and #main.children >= 2) then return false end
+    local panel, cards = main.children[1], main.children[#main.children]
+    if panel.portrait_restacked then return false end
+    if not (panel.UIT == G.UIT.C and cards.UIT == G.UIT.C and has_card_area(cards) and not has_card_area(panel)) then return false end
+    local left, ranks = panel.children and panel.children[1], panel.children and panel.children[2]
+    if not (left and ranks and left.UIT == G.UIT.C and ranks.UIT == G.UIT.C and left.children and #left.children >= 2) then return false end
+
+    panel.portrait_restacked = true
+    panel.UIT, cards.UIT = G.UIT.R, G.UIT.R
+    panel.config.align, cards.config.align = 'cm', 'cm'
+
+    left.UIT = G.UIT.R
+    left.config.align = 'cm'
+    for _, c in ipairs(left.children) do c.UIT = G.UIT.C end
+    -- The tally keeps its rows: title, aces/faces/numbers, then the suits two to
+    -- a row. Those go into one row.
+    local tally = left.children[2]
+    local first
+    for i = 3, #(tally.children or {}) do
+        local row = tally.children[i]
+        if not first then
+            first = row
+        else
+            for _, c in ipairs(row.children or {}) do
+                c.parent = first
+                first.children[#first.children + 1] = c
+            end
+            row.children = {}
+            row.config.padding, row.config.minh = 0, 0
+        end
+    end
+
+    ranks.UIT = G.UIT.R
+    ranks.config.align = 'cm'
+    for _, col in ipairs(ranks.children or {}) do
+        col.UIT = G.UIT.R
+        for _, entry in ipairs(col.children or {}) do
+            entry.UIT = G.UIT.C
+            for _, part in ipairs(entry.children or {}) do
+                part.UIT = G.UIT.R
+                part.config.align = 'cm'
+            end
+        end
+    end
+    box:recalculate()
+    return true
+end
+
+function portrait_restack_smods_deck(overlay)
+    if not (G and G.F_PORTRAIT and overlay and overlay.get_UIE_by_ID) then return end
+    local node = overlay:get_UIE_by_ID('suit_list')
+    if node and portrait_wrap_smods_suits_page then portrait_wrap_smods_suits_page() end
+    local inner = node and node.config.object
+    if inner and inner.UIRoot and restack_smods_deck(inner) then
+        recalculate_overlay(overlay)
+    end
+end
+
 function portrait_fit_overlay(box)
     if not (G and G.F_PORTRAIT and box and box.UIRoot and G.TILESCALE and G.TILESIZE) then return end
+    portrait_restack_smods_deck(box)
     fit_overlay_width(box)
     lift_overlay(box)
+end
+
+--Steamodded's page of more suits builds its View Deck again, in its old order.
+function portrait_wrap_smods_suits_page()
+    local page = G and G.FUNCS and G.FUNCS.your_suits_page
+    if not page or G.FUNCS.portrait_suits_page_wrapped then return end
+    G.FUNCS.portrait_suits_page_wrapped = true
+    G.FUNCS.your_suits_page = function(...)
+        page(...)
+        if G.F_PORTRAIT and G.OVERLAY_MENU then portrait_fit_overlay(G.OVERLAY_MENU) end
+    end
 end
 
 --The language box sits beside the menu column, and a long name ("Español
